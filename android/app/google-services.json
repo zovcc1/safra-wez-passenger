@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "371170387063",
+    "project_id": "safrah-9fd11",
+    "storage_bucket": "safrah-9fd11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371170387063:android:3daa807dfe09d994a05272",
+        "android_client_info": {
+          "package_name": "com.safraa.passenger_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIyszsnMc2Gc31sq45tSWwxtdi48eqObc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
