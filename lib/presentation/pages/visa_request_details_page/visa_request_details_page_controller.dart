@@ -67,8 +67,9 @@ class VisaRequestDetailsPageController extends GetxController {
     final file = await visaRepo.downloadDocument(
       requestId: requestId,
       documentId: document.documentId,
-      fileName:
-          "${document.fieldKey.isEmpty ? 'visa_document' : document.fieldKey}_${document.documentId}",
+      fileName: document.originalName.isEmpty
+          ? "visa_document_${document.documentId}"
+          : document.originalName,
       progress: downloadProgress,
     );
     downloadingDocumentId.value = null;

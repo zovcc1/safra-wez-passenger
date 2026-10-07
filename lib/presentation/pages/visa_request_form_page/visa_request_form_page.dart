@@ -4,13 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_field_model.dart';
+import 'package:safraa_passenger_app/core/app_config/app_translation.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/custom_bottom_sheet.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/visa_request_form_page/visa_request_form_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/utils.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
   const VisaRequestFormPage({super.key});
@@ -28,7 +33,7 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -49,69 +54,162 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppPadding.p16),
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppPadding.p12,
-            vertical: AppPadding.p10,
-          ),
-          decoration: BoxDecoration(
-            color: ColorManager.colorWhite,
-            borderRadius: BorderRadius.circular(AppSize.s16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.payments_outlined,
-                size: AppSize.s20,
-                color: ColorManager.colorPrimary,
-              ),
-              const SizedBox(width: AppPadding.p8),
-              Text(
-                "visa_form_price_label".tr,
-                style: TextStyle(
-                  fontSize: FontSize.s14,
-                  color: ColorManager.colorGrey6,
-                ),
-              ),
-              const Spacer(),
-              Obx(
-                () => Text(
-                  controller.expectedPrice.value,
-                  style: TextStyle(
-                    fontSize: FontSize.s16,
-                    fontWeight: FontWeight.bold,
+        if (controller.mode == VisaFormMode.create) ...[
+          FadeSlideIn(
+            child: _CardShell(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.payments_outlined,
+                    size: AppSize.s20,
                     color: ColorManager.colorPrimary,
                   ),
-                ),
+                  const SizedBox(width: AppPadding.p8),
+                  Text(
+                    "visa_form_price_label".tr,
+                    style: TextStyle(
+                      fontSize: FontSize.s14,
+                      color: ColorManager.colorGrey6,
+                    ),
+                  ),
+                  const Spacer(),
+                  Obx(
+                    () => Text(
+                      Money.format(controller.expectedPrice.value),
+                      style: TextStyle(
+                        fontSize: FontSize.s16,
+                        fontWeight: FontWeight.bold,
+                        color: ColorManager.colorPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: AppPadding.p12),
+        ],
+        FadeSlideIn(
+          delay: const Duration(milliseconds: 70),
+          child: _CardShell(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: AppSize.s20,
+                      color: ColorManager.colorPrimary,
+                    ),
+                    const SizedBox(width: AppPadding.p8),
+                    Text(
+                      "visa_form_details_title".tr,
+                      style: TextStyle(
+                        fontSize: FontSize.s15,
+                        fontWeight: FontWeight.bold,
+                        color: ColorManager.colorFontPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppPadding.p12),
+                for (var i = 0; i < form.fields.length; i++) ...[
+                  _FieldWidget(field: form.fields[i]),
+                  if (i != form.fields.length - 1)
+                    const SizedBox(height: AppPadding.p12),
+                ],
+              ],
+            ),
           ),
         ),
         const SizedBox(height: AppPadding.p12),
-        for (final field in form.fields) ...[
-          _FieldWidget(field: field),
-          const SizedBox(height: AppPadding.p12),
-        ],
-        Obx(
-          () => AppButton(
-            text: "visa_form_submit_button".tr,
-            radius: 12,
-            minHeight: 42,
-            loadingMode: controller.submitting.value,
-            onPressed: controller.submit,
+        FadeSlideIn(
+          delay: const Duration(milliseconds: 140),
+          child: Obx(
+            () => AppButton(
+              text: "visa_form_submit_button".tr,
+              radius: 12,
+              minHeight: 42,
+              loadingMode: controller.submitting.value,
+              onPressed: controller.submit,
+            ),
           ),
         ),
       ],
     );
   }
 }
+
+class _CardShell extends StatelessWidget {
+  const _CardShell({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppPadding.p12,
+        vertical: AppPadding.p10,
+      ),
+      decoration: BoxDecoration(
+        color: ColorManager.colorWhite,
+        borderRadius: BorderRadius.circular(AppSize.s16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+/// شكل موحّد لكل حقول النموذج: خلفية رمادية فاتحة وزوايا 10 وإطار بلون التطبيق
+/// عند التركيز أو بلون الخطأ عند وجوده.
+InputDecoration _fieldDecoration({
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+  bool hasError = false,
+}) {
+  OutlineInputBorder border(Color color, [double width = 1]) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
+  return InputDecoration(
+    isDense: true,
+    filled: true,
+    fillColor: ColorManager.colorBackground,
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppPadding.p12,
+      vertical: 12,
+    ),
+    enabledBorder: border(
+      hasError ? ColorManager.colorError300 : Colors.transparent,
+    ),
+    focusedBorder: border(
+      hasError ? ColorManager.colorError300 : ColorManager.colorPrimary,
+    ),
+    errorBorder: border(ColorManager.colorError300),
+    focusedErrorBorder: border(ColorManager.colorError300),
+    border: border(Colors.transparent),
+  );
+}
+
+TextStyle _fieldTextStyle() => TextStyle(
+  fontFamily: AppTranslations.appFontFamily,
+  fontSize: FontSize.s13,
+  color: ColorManager.colorFontPrimary,
+);
 
 class _FieldWidget extends StatelessWidget {
   const _FieldWidget({required this.field});
@@ -126,80 +224,70 @@ class _FieldWidget extends StatelessWidget {
       final error = controller.fieldErrors.isEmpty
           ? null
           : controller.fieldError(field);
+      final hasError = error != null;
 
-      return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.p12,
-          vertical: AppPadding.p10,
-        ),
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    field.displayLabel,
-                    style: TextStyle(
-                      fontSize: FontSize.s14,
-                      fontWeight: FontWeight.w600,
-                      color: ColorManager.colorFontPrimary,
-                    ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  field.displayLabel,
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    fontWeight: FontWeight.w600,
+                    color: ColorManager.colorGrey6,
                   ),
                 ),
-                if (field.required)
-                  Text(
-                    "*",
-                    style: TextStyle(
-                      fontSize: FontSize.s14,
-                      fontWeight: FontWeight.bold,
-                      color: ColorManager.colorError300,
-                    ),
+              ),
+              if (field.required)
+                Text(
+                  " *",
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    fontWeight: FontWeight.bold,
+                    color: ColorManager.colorError300,
                   ),
-              ],
-            ),
-            const SizedBox(height: AppPadding.p8),
-            if (field.type == "file")
-              _FilePickerTile(field: field)
-            else
-              TextFormField(
-                controller: controller.textControllers[field.fieldId],
-                onChanged: (value) =>
-                    controller.onTextChanged(field.fieldId, value),
-                decoration: const InputDecoration(isDense: true),
-              ),
-            if (error != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                error,
-                style: TextStyle(
-                  fontSize: FontSize.s11,
-                  color: ColorManager.colorError300,
                 ),
-              ),
             ],
+          ),
+          const SizedBox(height: 6),
+          if (field.type == "file")
+            _FilePickerTile(field: field, hasError: hasError)
+          else if (field.type == "select")
+            _SelectField(field: field, hasError: hasError)
+          else if (field.type == "date")
+            _DateField(field: field, hasError: hasError)
+          else
+            TextFormField(
+              controller: controller.textControllers[field.fieldId],
+              onChanged: (value) =>
+                  controller.onTextChanged(field.fieldId, value),
+              style: _fieldTextStyle(),
+              decoration: _fieldDecoration(hasError: hasError),
+            ),
+          if (hasError) ...[
+            const SizedBox(height: 4),
+            Text(
+              error,
+              style: TextStyle(
+                fontSize: FontSize.s11,
+                color: ColorManager.colorError300,
+              ),
+            ),
           ],
-        ),
+        ],
       );
     });
   }
 }
 
 class _FilePickerTile extends StatelessWidget {
-  const _FilePickerTile({required this.field});
+  const _FilePickerTile({required this.field, required this.hasError});
 
   final VisaFieldModel field;
+  final bool hasError;
 
   @override
   Widget build(BuildContext context) {
@@ -208,34 +296,54 @@ class _FilePickerTile extends StatelessWidget {
 
     return Obx(() {
       final file = fileRx?.value;
+      final picked = file != null;
       return InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () async {
-          final picked = await Utils.filePicker();
-          if (picked?.path == null) return;
-          controller.setFile(field.fieldId, File(picked!.path!));
+          final result = await Utils.filePicker();
+          if (result?.path == null) return;
+          controller.setFile(field.fieldId, File(result!.path!));
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(
             horizontal: AppPadding.p12,
-            vertical: AppPadding.p12,
+            vertical: 12,
           ),
           decoration: BoxDecoration(
-            color: ColorManager.colorBackground,
-            borderRadius: BorderRadius.circular(AppSize.s10),
+            color: picked
+                ? ColorManager.colorPrimary.withValues(alpha: 0.08)
+                : ColorManager.colorBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: hasError
+                  ? ColorManager.colorError300
+                  : (picked ? ColorManager.colorPrimary : Colors.transparent),
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.attach_file, color: ColorManager.colorGrey6, size: 18),
+              Icon(
+                picked ? Icons.check_circle_rounded : Icons.upload_file_rounded,
+                color: picked
+                    ? ColorManager.colorPrimary
+                    : ColorManager.colorGrey6,
+                size: 18,
+              ),
               const SizedBox(width: AppPadding.p8),
               Expanded(
                 child: Text(
-                  file == null
-                      ? "visa_form_choose_file".tr
-                      : file.path.split('/').last,
+                  picked
+                      ? file.path.split(RegExp(r'[\\/]')).last
+                      : "visa_form_choose_file".tr,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: FontSize.s13,
-                    color: ColorManager.colorFontPrimary,
+                    fontWeight: picked ? FontWeight.w600 : FontWeight.normal,
+                    color: picked
+                        ? ColorManager.colorPrimary
+                        : ColorManager.colorGrey6,
                   ),
                 ),
               ),
@@ -244,5 +352,205 @@ class _FilePickerTile extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class _SelectField extends StatelessWidget {
+  const _SelectField({required this.field, required this.hasError});
+
+  final VisaFieldModel field;
+  final bool hasError;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<VisaRequestFormPageController>();
+    final text = controller.textControllers[field.fieldId]!;
+
+    // القيمة المرسلة هي نص الخيار بالإنكليزية (اتفاق مع فريق الأدمن).
+    String valueOf(Map option) => "${option["en"] ?? option["ar"] ?? ""}";
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: text,
+      builder: (context, value, _) {
+        final selected = value.text;
+        final selectedOption = field.options
+            .where((o) => valueOf(o) == selected)
+            .firstOrNull;
+        final label = selectedOption == null
+            ? null
+            : Utils.parseLocalizedName(selectedOption);
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+            showCustomBottomSheet(
+              title: field.displayLabel,
+              height: MediaQuery.of(context).size.height * 0.6,
+              content: _OptionsList(
+                options: [
+                  for (final option in field.options)
+                    (
+                      value: valueOf(option),
+                      label: Utils.parseLocalizedName(option),
+                    ),
+                ],
+                selected: selected,
+                onSelected: (v) => controller.setFieldText(field.fieldId, v),
+              ),
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppPadding.p12,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: ColorManager.colorBackground,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: hasError
+                    ? ColorManager.colorError300
+                    : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label ?? "visa_form_choose_option".tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _fieldTextStyle().copyWith(
+                      color: label == null
+                          ? ColorManager.colorGrey6
+                          : ColorManager.colorFontPrimary,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: ColorManager.colorGrey6,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OptionsList extends StatelessWidget {
+  const _OptionsList({
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<({String value, String label})> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: const EdgeInsets.all(AppPadding.p16),
+      itemCount: options.length,
+      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
+      itemBuilder: (context, index) {
+        final option = options[index];
+        final isSelected = option.value == selected;
+        return InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            onSelected(option.value);
+            Get.back();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppPadding.p12,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? ColorManager.colorPrimary.withValues(alpha: 0.08)
+                  : ColorManager.colorBackground,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? ColorManager.colorPrimary
+                    : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    option.label,
+                    style: _fieldTextStyle().copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
+                      color: isSelected
+                          ? ColorManager.colorPrimary
+                          : ColorManager.colorFontPrimary,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: ColorManager.colorPrimary,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({required this.field, required this.hasError});
+
+  final VisaFieldModel field;
+  final bool hasError;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<VisaRequestFormPageController>();
+    final text = controller.textControllers[field.fieldId]!;
+    return TextFormField(
+      controller: text,
+      readOnly: true,
+      style: _fieldTextStyle(),
+      decoration: _fieldDecoration(
+        hasError: hasError,
+        suffixIcon: Icon(
+          Icons.calendar_today_outlined,
+          size: 18,
+          color: ColorManager.colorGrey6,
+        ),
+      ),
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: DateTime.tryParse(text.text) ?? now,
+          firstDate: DateTime(1900),
+          lastDate: DateTime(now.year + 20),
+        );
+        if (picked == null) return;
+        final mm = picked.month.toString().padLeft(2, '0');
+        final dd = picked.day.toString().padLeft(2, '0');
+        controller.setFieldText(field.fieldId, "${picked.year}-$mm-$dd");
+      },
+    );
   }
 }

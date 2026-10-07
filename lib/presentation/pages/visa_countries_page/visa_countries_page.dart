@@ -5,11 +5,14 @@ import 'package:safraa_passenger_app/data/models/visa_country_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/visa_countries_page/visa_countries_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class VisaCountriesPage extends GetView<VisaCountriesPageController> {
   const VisaCountriesPage({super.key});
@@ -27,7 +30,7 @@ class VisaCountriesPage extends GetView<VisaCountriesPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -72,8 +75,10 @@ class VisaCountriesPage extends GetView<VisaCountriesPageController> {
       padding: const EdgeInsets.all(AppPadding.p16),
       itemCount: controller.countries.length,
       separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
-      itemBuilder: (context, index) =>
-          _CountryCard(country: controller.countries[index]),
+      itemBuilder: (context, index) => FadeSlideIn(
+        delay: Duration(milliseconds: 40 * index.clamp(0, 8)),
+        child: _CountryCard(country: controller.countries[index]),
+      ),
     );
   }
 }
@@ -103,7 +108,11 @@ class _CountryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSize.s16),
           onTap: () => Get.toNamed(
             AppRoutes.visaRequestFormRoute,
-            arguments: {"mode": "create", "countryId": country.id},
+            arguments: {
+              "mode": "create",
+              "countryId": country.id,
+              "price": country.visaPrice,
+            },
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -137,7 +146,7 @@ class _CountryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  country.visaPrice,
+                  Money.format(country.visaPrice),
                   style: TextStyle(
                     fontSize: FontSize.s14,
                     fontWeight: FontWeight.bold,

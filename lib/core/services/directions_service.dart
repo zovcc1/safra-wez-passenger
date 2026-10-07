@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -36,37 +38,58 @@ abstract class DirectionsService {
   ) async {
     if (!isConfigured) return const [];
     try {
-      final response = await _dio.get(
-        "https://maps.googleapis.com/maps/api/directions/json",
-        queryParameters: {
-          "origin": "${origin.latitude},${origin.longitude}",
-          "destination": "${destination.latitude},${destination.longitude}",
-          "alternatives": "true",
-          "language": AppTranslations.currentLang,
-          "key": Env.googleDirectionsKey,
+      // Routes API (بديل Directions القديم غير المفعّل). المفتاح مقيَّد بتطبيق
+      // Android/iOS فلازم إرسال هوية التطبيق في الترويسات.
+      final response = await _dio.post(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        options: Options(
+          headers: {
+            "X-Goog-Api-Key": Env.googleDirectionsKey,
+            "X-Goog-FieldMask":
+                "routes.duration,routes.distanceMeters,routes.description,"
+                "routes.polyline.encodedPolyline",
+            if (Platform.isAndroid) ...{
+              "X-Android-Package": Env.androidPackage,
+              "X-Android-Cert": Env.androidCertSha1,
+            },
+            if (Platform.isIOS) "X-Ios-Bundle-Identifier": Env.iosBundleId,
+          },
+        ),
+        data: {
+          "origin": _waypoint(origin),
+          "destination": _waypoint(destination),
+          "travelMode": "DRIVE",
+          "routingPreference": "TRAFFIC_AWARE",
+          "polylineQuality": "HIGH_QUALITY",
+          "computeAlternativeRoutes": true,
+          "languageCode": AppTranslations.currentLang,
         },
       );
-      final data = response.data as Map;
-      if (data["status"] != "OK") {
-        debugPrint(
-          "Directions status: ${data["status"]} ${data["error_message"] ?? ""}",
-        );
-        return const [];
-      }
-      return (data["routes"] as List).map((r) {
-        final leg = (r["legs"] as List).first as Map;
+      final routes = (response.data as Map)["routes"] as List? ?? const [];
+      return routes.map((r) {
+        r as Map;
         return RouteOption(
-          points: decodePolyline(r["overview_polyline"]["points"] as String),
-          distanceMeters: (leg["distance"]["value"] as num).toInt(),
-          durationSeconds: (leg["duration"]["value"] as num).toInt(),
-          summary: r["summary"]?.toString() ?? "",
+          points: decodePolyline(r["polyline"]["encodedPolyline"] as String),
+          distanceMeters: (r["distanceMeters"] as num?)?.toInt() ?? 0,
+          durationSeconds:
+              int.tryParse("${r["duration"]}".replaceAll("s", "")) ?? 0,
+          summary: r["description"]?.toString() ?? "",
         );
       }).toList();
+    } on DioException catch (e) {
+      debugPrint("Routes failed: ${e.response?.data ?? e.message}");
+      return const [];
     } catch (e) {
-      debugPrint("Directions failed: $e");
+      debugPrint("Routes failed: $e");
       return const [];
     }
   }
+
+  static Map<String, dynamic> _waypoint(LatLng p) => {
+    "location": {
+      "latLng": {"latitude": p.latitude, "longitude": p.longitude},
+    },
+  };
 
   /// Google encoded polyline algorithm.
   static List<LatLng> decodePolyline(String encoded) {

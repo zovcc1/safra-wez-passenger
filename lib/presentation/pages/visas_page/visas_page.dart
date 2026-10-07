@@ -4,6 +4,7 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_request_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/pages/visas_page/visas_page_controller.dart';
@@ -11,6 +12,8 @@ import 'package:safraa_passenger_app/presentation/util/resources/color_manager.d
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/visa_status_display.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class VisasPage extends GetView<VisasPageController> {
   const VisasPage({super.key});
@@ -44,15 +47,7 @@ class VisasPage extends GetView<VisasPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          Padding(
-            padding: EdgeInsets.only(top: 120),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -106,10 +101,13 @@ class VisasPage extends GetView<VisasPageController> {
         if (index >= controller.requests.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: AppPadding.p16),
-            child: Center(child: CircularProgressIndicator()),
+            child: AppLoader.dots(),
           );
         }
-        return _VisaRequestCard(request: controller.requests[index]);
+        return FadeSlideIn(
+          delay: Duration(milliseconds: 40 * index.clamp(0, 8)),
+          child: _VisaRequestCard(request: controller.requests[index]),
+        );
       },
     );
   }
@@ -202,13 +200,52 @@ class _VisaRequestCard extends StatelessWidget {
                   runSpacing: AppPadding.p8,
                   children: [
                     InfoPill(icon: Icons.tag, text: "#${request.id}"),
-                    if (request.createdAt != null)
+                    if (request.submittedAt != null)
                       InfoPill(
                         icon: Icons.calendar_today_outlined,
-                        text: DateConverter.dateToStringAR(request.createdAt),
+                        text: DateConverter.dateToStringAR(request.submittedAt),
+                      ),
+                    if (request.paymentMethod != null)
+                      InfoPill(
+                        icon: Icons.account_balance_wallet_outlined,
+                        text: VisaStatusDisplay.paymentLabel(
+                          request.paymentMethod!,
+                        ),
+                      ),
+                    if (request.visaProviderName != null)
+                      InfoPill(
+                        icon: Icons.business_outlined,
+                        text: request.visaProviderName!,
+                      ),
+                    if (request.assignedAt != null)
+                      InfoPill(
+                        icon: Icons.person_search_outlined,
+                        text:
+                            "${"visa_details_step_assigned".tr} • ${DateConverter.dateToStringAR(request.assignedAt)}",
+                      ),
+                    if (request.deliveredAt != null)
+                      InfoPill(
+                        icon: Icons.check_circle_outline,
+                        color: ColorManager.colorGreen3,
+                        text:
+                            "${"visa_details_step_delivered".tr} • ${DateConverter.dateToStringAR(request.deliveredAt)}",
                       ),
                   ],
                 ),
+                if ((request.status == "needs_info" ||
+                        request.status == "rejected") &&
+                    (request.adminNote?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: AppPadding.p8),
+                  Text(
+                    request.adminNote!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: FontSize.s12,
+                      color: status.color,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppPadding.p8),
                 Divider(
                   height: 1,
@@ -217,13 +254,14 @@ class _VisaRequestCard extends StatelessWidget {
                 const SizedBox(height: AppPadding.p8),
                 Row(
                   children: [
-                    const Spacer(),
-                    Text(
-                      request.expectedPrice,
-                      style: TextStyle(
-                        fontSize: FontSize.s16,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.colorPrimary,
+                    Expanded(
+                      child: Text(
+                        Money.format(request.quotedAmount),
+                        style: TextStyle(
+                          fontSize: FontSize.s16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorManager.colorPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),

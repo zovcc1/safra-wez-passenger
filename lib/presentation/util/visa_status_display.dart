@@ -14,6 +14,14 @@ class VisaStatusDisplay {
 
   const VisaStatusDisplay(this.label, this.color);
 
+  /// اسم طريقة الدفع المعروض (external, wallet, ...).
+  static String paymentLabel(String method) => switch (method) {
+    "external" => "visa_payment_external".tr,
+    "wallet" => "create_booking_payment_wallet_short".tr,
+    "cash_on_delivery" => "create_booking_payment_cod_short".tr,
+    _ => method,
+  };
+
   static VisaStatusDisplay of(String status) {
     switch (status) {
       case "submitted":

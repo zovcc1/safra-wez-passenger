@@ -12,6 +12,7 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/custom_toasts.d
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
 
 enum VisaFormMode { create, resubmit, edit }
 
@@ -26,8 +27,8 @@ class VisaRequestFormPageController extends GetxController {
   final submitting = false.obs;
   final Rxn<VisaFormModel> form = Rxn<VisaFormModel>();
 
-  // قيمة السعر المتوقَّع الحالية بنظر المستخدم — تُحدَّث بعد تأكيد تغيّر السعر
-  // (409 بوضع create فقط). تُهيَّأ من visa_price عند تحميل النموذج.
+  // السعر المعروض للمستخدم: يأتي من قائمة الدول (price) لأن نموذج الدولة لا
+  // يحمل سعرًا — يُحدَّث بعد تأكيد تغيّر السعر (409 بوضع create فقط).
   final expectedPrice = "".obs;
 
   final Map<int, TextEditingController> textControllers = {};
@@ -46,12 +47,19 @@ class VisaRequestFormPageController extends GetxController {
     );
     countryId = args["countryId"] as int;
     requestId = args["requestId"] as int?;
+    expectedPrice.value = args["price"]?.toString() ?? "";
     _loadForm();
   }
 
   Future<void> _loadForm() async {
     loadingState.value = LoadingState.loading;
     fieldErrors.clear();
+    for (final c in textControllers.values) {
+      c.dispose();
+    }
+    textControllers.clear();
+    fileValues.clear();
+    touchedFields.clear();
     final response = await visaRepo.form(countryId);
     if (!response.success) {
       loadingState.value = LoadingState.hasError;
@@ -64,7 +72,6 @@ class VisaRequestFormPageController extends GetxController {
 
     final loadedForm = response.data!;
     form.value = loadedForm;
-    expectedPrice.value = loadedForm.visaPrice;
 
     for (final field in loadedForm.fields) {
       if (field.type == "file") {
@@ -78,6 +85,12 @@ class VisaRequestFormPageController extends GetxController {
   }
 
   void onTextChanged(int fieldId, String value) => touchedFields.add(fieldId);
+
+  /// date (YYYY-MM-DD) وselect (نص الخيار en) يُخزَّنان بنفس متحكّم النص.
+  void setFieldText(int fieldId, String value) {
+    touchedFields.add(fieldId);
+    textControllers[fieldId]?.text = value;
+  }
 
   void setFile(int fieldId, File? file) {
     touchedFields.add(fieldId);
@@ -209,10 +222,17 @@ class VisaRequestFormPageController extends GetxController {
       return;
     }
 
-    if (mode == VisaFormMode.create &&
-        (fieldErrors.containsKey("current_price") ||
-            fieldErrors.containsKey("expected_price"))) {
-      _promptPriceChange();
+    if (mode == VisaFormMode.create && statusCode == 409) {
+      if (fieldErrors.containsKey("current_price")) {
+        _promptPriceChange();
+      } else {
+        // 409 بلا current_price = النموذج تحدّث أثناء التعبئة: نعيد تحميله.
+        CustomToasts(
+          message: "visa_form_template_changed".tr,
+          type: CustomToastType.warning,
+        ).show();
+        _loadForm();
+      }
       return;
     }
 
@@ -225,10 +245,7 @@ class VisaRequestFormPageController extends GetxController {
   }
 
   void _promptPriceChange() {
-    final raw =
-        fieldErrors["current_price"] ?? fieldErrors["expected_price"] ?? "";
-    final parts = raw.split("→");
-    final newPrice = (parts.length > 1 ? parts.last : raw).trim();
+    final newPrice = (fieldErrors["current_price"] ?? "").trim();
     if (newPrice.isNotEmpty) expectedPrice.value = newPrice;
 
     Get.dialog(
@@ -274,7 +291,9 @@ class _PriceChangeDialog extends StatelessWidget {
             ),
             const SizedBox(height: AppPadding.p8),
             Text(
-              "visa_form_price_changed_message".trParams({"price": newPrice}),
+              "visa_form_price_changed_message".trParams({
+                "price": Money.format(newPrice),
+              }),
               style: TextStyle(
                 fontSize: FontSize.s13,
                 color: ColorManager.colorGrey6,
