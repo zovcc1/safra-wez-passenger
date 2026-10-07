@@ -13,6 +13,8 @@ import 'package:safraa_passenger_app/presentation/util/booking_status_display.da
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class BookingDetailsPage extends GetView<BookingDetailsPageController> {
   const BookingDetailsPage({super.key});
@@ -35,15 +37,7 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.loading || state == LoadingState.idle) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          Padding(
-            padding: EdgeInsets.only(top: 120),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -660,7 +654,7 @@ class _PriceSummaryCard extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            "${booking.totalAmount} ${booking.currency}",
+            Money.format(booking.totalAmount),
             style: TextStyle(
               fontSize: FontSize.s16,
               fontWeight: FontWeight.bold,

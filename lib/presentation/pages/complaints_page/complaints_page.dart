@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/complaint_model.dart';
@@ -15,6 +14,7 @@ import 'package:safraa_passenger_app/presentation/util/complaint_display.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class ComplaintsPage extends GetView<ComplaintsPageController> {
   const ComplaintsPage({super.key});
@@ -49,20 +49,7 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 120),
-            child: Center(
-              child: SpinKitFadingCircle(
-                color: ColorManager.colorPrimary,
-                size: 42,
-              ),
-            ),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -120,12 +107,7 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
         if (index >= controller.complaints.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: AppPadding.p16),
-            child: Center(
-              child: SpinKitThreeBounce(
-                color: ColorManager.colorPrimary,
-                size: 20,
-              ),
-            ),
+            child: Center(child: AppLoader.dots(size: 20)),
           );
         }
         final complaint = controller.complaints[index];

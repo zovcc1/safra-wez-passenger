@@ -11,6 +11,7 @@ import 'package:safraa_passenger_app/presentation/pages/file_complaint_page/file
 import 'package:safraa_passenger_app/presentation/util/complaint_display.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class FileComplaintPage extends GetView<FileComplaintPageController> {
   const FileComplaintPage({super.key});
@@ -31,7 +32,7 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
     final state = controller.categoriesState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoader();
     }
 
     if (state == LoadingState.hasError) {

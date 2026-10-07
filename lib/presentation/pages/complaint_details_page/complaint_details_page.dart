@@ -12,6 +12,7 @@ import 'package:safraa_passenger_app/presentation/util/complaint_display.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class ComplaintDetailsPage extends GetView<ComplaintDetailsPageController> {
   const ComplaintDetailsPage({super.key});
@@ -35,7 +36,7 @@ class ComplaintDetailsPage extends GetView<ComplaintDetailsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -849,10 +850,10 @@ class _ReplyInput extends StatelessWidget {
                       child: Center(
                         child: sending
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                                width: 32,
+                                height: 16,
+                                child: AppLoader.dots(
+                                  size: 16,
                                   color: Colors.white,
                                 ),
                               )

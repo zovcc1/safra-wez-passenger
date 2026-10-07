@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/booking_model.dart';
@@ -13,6 +12,8 @@ import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class BookingsPage extends GetView<BookingsPageController> {
   const BookingsPage({super.key});
@@ -34,23 +35,7 @@ class BookingsPage extends GetView<BookingsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 120),
-            child: Center(
-              child: FadeSlideIn(
-                offset: 8,
-                child: SpinKitFadingCircle(
-                  color: ColorManager.colorPrimary,
-                  size: 42,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -96,12 +81,7 @@ class BookingsPage extends GetView<BookingsPageController> {
         if (index >= controller.bookings.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: AppPadding.p16),
-            child: Center(
-              child: SpinKitThreeBounce(
-                color: ColorManager.colorPrimary,
-                size: 20,
-              ),
-            ),
+            child: Center(child: AppLoader.dots(size: 20)),
           );
         }
         return FadeSlideIn(
@@ -252,20 +232,12 @@ class _BookingCardState extends State<_BookingCard> {
                       children: [
                         Expanded(
                           child: Text(
-                            "#${booking.bookingId}",
+                            Money.format(booking.totalAmount),
                             style: TextStyle(
-                              fontSize: FontSize.s12,
-                              fontWeight: FontWeight.w600,
-                              color: ColorManager.colorGrey6,
+                              fontSize: FontSize.s16,
+                              fontWeight: FontWeight.bold,
+                              color: ColorManager.colorPrimary,
                             ),
-                          ),
-                        ),
-                        Text(
-                          "${booking.totalAmount} ${booking.currency}",
-                          style: TextStyle(
-                            fontSize: FontSize.s16,
-                            fontWeight: FontWeight.bold,
-                            color: ColorManager.colorPrimary,
                           ),
                         ),
                         const SizedBox(width: 4),

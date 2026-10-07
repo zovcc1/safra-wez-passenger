@@ -11,6 +11,8 @@ import 'package:safraa_passenger_app/presentation/pages/create_booking_page/crea
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class CreateBookingPage extends GetView<CreateBookingPageController> {
   const CreateBookingPage({super.key});
@@ -95,9 +97,7 @@ class CreateBookingPage extends GetView<CreateBookingPageController> {
                       ),
                       const Spacer(),
                       Text(
-                        "trips_price_syp".trParams({
-                          "price": total.toStringAsFixed(0),
-                        }),
+                        Money.format(total.toString()),
                         style: TextStyle(
                           fontSize: FontSize.s16,
                           fontWeight: FontWeight.bold,
@@ -308,7 +308,7 @@ class _SeatPicker extends GetView<CreateBookingPageController> {
       if (state == LoadingState.loading || state == LoadingState.idle) {
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: AppPadding.p16),
-          child: Center(child: CircularProgressIndicator()),
+          child: AppLoader(),
         );
       }
 

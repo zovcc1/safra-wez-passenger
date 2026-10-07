@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/core/services/cache_service.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/guest_gate_widget.dart';
@@ -19,6 +18,8 @@ import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class TripsPage extends GetView<TripsPageController> {
   const TripsPage({super.key});
@@ -101,13 +102,7 @@ class TripsPage extends GetView<TripsPageController> {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: FadeSlideIn(
-            offset: 8,
-            child: SpinKitFadingCircle(
-              color: ColorManager.colorPrimary,
-              size: 42,
-            ),
-          ),
+          child: FadeSlideIn(offset: 8, child: AppLoader(size: 42)),
         ),
       );
     }
@@ -149,12 +144,7 @@ class TripsPage extends GetView<TripsPageController> {
           if (index >= controller.results.length) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: AppPadding.p16),
-              child: Center(
-                child: SpinKitThreeBounce(
-                  color: ColorManager.colorPrimary,
-                  size: 20,
-                ),
-              ),
+              child: Center(child: AppLoader.dots(size: 20)),
             );
           }
           return FadeSlideIn(
@@ -352,7 +342,7 @@ class _GovernoratePickerContent extends GetView<TripsPageController> {
       if (state == LoadingState.loading || state == LoadingState.idle) {
         return const Padding(
           padding: EdgeInsets.all(AppPadding.p24),
-          child: Center(child: CircularProgressIndicator()),
+          child: AppLoader(),
         );
       }
 
@@ -927,48 +917,27 @@ class _VehicleTypeChips extends GetView<TripsPageController> {
 }
 
 /// ratings_count المنشور لا الفعلي. rating_is_default=true → مزوّد جديد بدل النجوم.
-class _ProviderRatingRow extends StatelessWidget {
-  const _ProviderRatingRow({required this.result});
+class _ProviderRatingPill extends StatelessWidget {
+  const _ProviderRatingPill({required this.result});
 
   final TripSearchResultModel result;
 
   @override
   Widget build(BuildContext context) {
     if (result.ratingIsDefault) {
-      return Row(
-        children: [
-          Icon(
-            Icons.fiber_new_rounded,
-            size: 16,
-            color: ColorManager.colorGreen3,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            "trips_new_provider".tr,
-            style: TextStyle(
-              fontSize: FontSize.s12,
-              fontWeight: FontWeight.w600,
-              color: ColorManager.colorGreen3,
-            ),
-          ),
-        ],
+      return InfoPill(
+        icon: Icons.fiber_new_rounded,
+        color: ColorManager.colorGreen3,
+        text: "trips_new_provider".tr,
       );
     }
-    return Row(
-      children: [
-        Icon(Icons.star_rounded, size: 16, color: ColorManager.colorOrange),
-        const SizedBox(width: 4),
-        Text(
-          "trips_provider_rating".trParams({
-            "rating": result.avgRating.toStringAsFixed(1),
-            "count": "${result.ratingsCount}",
-          }),
-          style: TextStyle(
-            fontSize: FontSize.s12,
-            color: ColorManager.colorGrey6,
-          ),
-        ),
-      ],
+    return InfoPill(
+      icon: Icons.star_rounded,
+      color: ColorManager.colorOrange,
+      text: "trips_provider_rating".trParams({
+        "rating": result.avgRating.toStringAsFixed(1),
+        "count": "${result.ratingsCount}",
+      }),
     );
   }
 }
@@ -980,12 +949,7 @@ class _TripResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priceValue = double.tryParse(result.basePrice);
-    final priceLabel = "trips_price_syp".trParams({
-      "price": priceValue != null
-          ? priceValue.toStringAsFixed(0)
-          : result.basePrice,
-    });
+    final priceLabel = Money.format(result.basePrice);
     final badgeColor = result.isOpenTrip
         ? ColorManager.colorOrange
         : ColorManager.colorPrimary;
@@ -1100,6 +1064,7 @@ class _TripResultCard extends StatelessWidget {
                                 "count": "${result.collectionPoints.length}",
                               }),
                       ),
+                    _ProviderRatingPill(result: result),
                   ],
                 ),
                 const SizedBox(height: AppPadding.p8),
@@ -1110,13 +1075,14 @@ class _TripResultCard extends StatelessWidget {
                 const SizedBox(height: AppPadding.p8),
                 Row(
                   children: [
-                    Expanded(child: _ProviderRatingRow(result: result)),
-                    Text(
-                      priceLabel,
-                      style: TextStyle(
-                        fontSize: FontSize.s16,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.colorPrimary,
+                    Expanded(
+                      child: Text(
+                        priceLabel,
+                        style: TextStyle(
+                          fontSize: FontSize.s16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorManager.colorPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),

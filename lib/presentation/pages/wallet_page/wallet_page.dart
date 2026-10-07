@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/wallet_model.dart';
@@ -15,6 +14,8 @@ import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/wallet_display.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class WalletPage extends GetView<WalletPageController> {
   const WalletPage({super.key});
@@ -85,17 +86,7 @@ class WalletPage extends GetView<WalletPageController> {
           ),
         ),
         if (txState == LoadingState.idle || txState == LoadingState.loading)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 60),
-              child: Center(
-                child: SpinKitFadingCircle(
-                  color: ColorManager.colorPrimary,
-                  size: 42,
-                ),
-              ),
-            ),
-          )
+          const SliverFillRemaining(hasScrollBody: false, child: AppLoader())
         else if (txState == LoadingState.hasError)
           SliverToBoxAdapter(
             child: Padding(
@@ -127,12 +118,7 @@ class WalletPage extends GetView<WalletPageController> {
                     padding: const EdgeInsets.symmetric(
                       vertical: AppPadding.p16,
                     ),
-                    child: Center(
-                      child: SpinKitThreeBounce(
-                        color: ColorManager.colorPrimary,
-                        size: 20,
-                      ),
-                    ),
+                    child: Center(child: AppLoader.dots(size: 20)),
                   );
                 }
                 return _TransactionCard(
@@ -149,15 +135,7 @@ class WalletPage extends GetView<WalletPageController> {
   Widget _balanceSection() {
     final state = controller.walletState.value;
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return SizedBox(
-        height: 150,
-        child: Center(
-          child: SpinKitFadingCircle(
-            color: ColorManager.colorPrimary,
-            size: 36,
-          ),
-        ),
-      );
+      return SizedBox(height: 150, child: Center(child: AppLoader(size: 36)));
     }
     if (state == LoadingState.hasError || controller.wallet.value == null) {
       return Container(
@@ -388,7 +366,7 @@ class _BalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: AppPadding.p4),
           Text(
-            "${wallet.balance} ${wallet.currency}",
+            Money.format(wallet.balance),
             style: TextStyle(
               fontSize: FontSize.s22,
               fontWeight: FontWeight.bold,
@@ -410,13 +388,13 @@ class _BalanceCard extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: "wallet_frozen_balance".tr,
-                    value: "${wallet.frozenBalance} ${wallet.currency}",
+                    value: Money.format(wallet.frozenBalance),
                   ),
                 ),
                 Expanded(
                   child: _Stat(
                     label: "wallet_total_balance".tr,
-                    value: "${wallet.totalBalance} ${wallet.currency}",
+                    value: Money.format(wallet.totalBalance),
                   ),
                 ),
               ],
@@ -593,8 +571,7 @@ class _TransactionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      "$sign${tx.amount}",
-                      textDirection: TextDirection.ltr,
+                      Money.signed(sign, tx.amount),
                       style: TextStyle(
                         fontSize: FontSize.s15,
                         fontWeight: FontWeight.bold,
@@ -604,7 +581,7 @@ class _TransactionCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       "wallet_balance_after".trParams({
-                        "amount": tx.balanceAfter,
+                        "amount": Money.format(tx.balanceAfter),
                       }),
                       style: TextStyle(
                         fontSize: FontSize.s10_5,

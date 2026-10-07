@@ -5,12 +5,14 @@ import 'package:safraa_passenger_app/data/models/notification_models.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/notifications_page/notifications_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 /// صندوق الوارد. تُفتح كصفحة مستقلة عبر جرس الإشعارات بشريط main_page.
 class NotificationsPage extends GetView<NotificationsPageController> {
@@ -78,15 +80,7 @@ class NotificationsPage extends GetView<NotificationsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.loading || state == LoadingState.idle) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          Padding(
-            padding: EdgeInsets.only(top: 120),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -138,16 +132,17 @@ class NotificationsPage extends GetView<NotificationsPageController> {
       separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
       itemBuilder: (_, index) {
         if (index >= items.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppPadding.p8),
-              child: CircularProgressIndicator(),
-            ),
+          return const Padding(
+            padding: EdgeInsets.all(AppPadding.p8),
+            child: AppLoader.dots(),
           );
         }
-        return _NotificationTile(
-          item: items[index],
-          onTap: () => controller.open(items[index]),
+        return FadeSlideIn(
+          delay: Duration(milliseconds: 40 * index.clamp(0, 8)),
+          child: _NotificationTile(
+            item: items[index],
+            onTap: () => controller.open(items[index]),
+          ),
         );
       },
     );

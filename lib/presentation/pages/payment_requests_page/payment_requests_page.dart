@@ -5,11 +5,14 @@ import 'package:safraa_passenger_app/data/models/payment_request_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
 import 'package:safraa_passenger_app/presentation/pages/payment_requests_page/payment_requests_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 /// تبويب طلبات الدفع: قائمة بترقيم cursor مع فلتر بالحالة، والضغط يفتح التفاصيل.
 class PaymentRequestsPage extends GetView<PaymentRequestsPageController> {
@@ -102,15 +105,7 @@ class PaymentRequestsPage extends GetView<PaymentRequestsPageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.loading || state == LoadingState.idle) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          Padding(
-            padding: EdgeInsets.only(top: 120),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {
@@ -162,16 +157,17 @@ class PaymentRequestsPage extends GetView<PaymentRequestsPageController> {
       separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
       itemBuilder: (_, index) {
         if (index >= items.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppPadding.p8),
-              child: CircularProgressIndicator(),
-            ),
+          return const Padding(
+            padding: EdgeInsets.all(AppPadding.p8),
+            child: AppLoader.dots(),
           );
         }
-        return _RequestCard(
-          request: items[index],
-          onTap: () => controller.open(items[index]),
+        return FadeSlideIn(
+          delay: Duration(milliseconds: 40 * index.clamp(0, 8)),
+          child: _RequestCard(
+            request: items[index],
+            onTap: () => controller.open(items[index]),
+          ),
         );
       },
     );
@@ -299,14 +295,15 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(height: AppPadding.p8),
                 Row(
                   children: [
-                    const Spacer(),
                     // المبلغ نص من الخادم ولا يُحوَّل إلى float.
-                    Text(
-                      "${request.amount} ${request.currency}",
-                      style: TextStyle(
-                        fontSize: FontSize.s16,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.colorPrimary,
+                    Expanded(
+                      child: Text(
+                        Money.format(request.amount),
+                        style: TextStyle(
+                          fontSize: FontSize.s16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorManager.colorPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),

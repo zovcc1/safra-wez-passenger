@@ -9,6 +9,7 @@ import 'package:safraa_passenger_app/presentation/pages/profile_page/profile_pag
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class ProfilePage extends GetView<ProfilePageController> {
   const ProfilePage({super.key});
@@ -30,15 +31,7 @@ class ProfilePage extends GetView<ProfilePageController> {
     final state = controller.loadingState.value;
 
     if (state == LoadingState.idle || state == LoadingState.loading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          Padding(
-            padding: EdgeInsets.only(top: 120),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
+      return const AppPageLoader();
     }
 
     if (state == LoadingState.hasError) {

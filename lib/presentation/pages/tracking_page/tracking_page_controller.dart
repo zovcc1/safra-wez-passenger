@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:get/get.dart';
+import 'package:safraa_passenger_app/presentation/util/map_marker_builder.dart';
+import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:safraa_passenger_app/core/services/directions_service.dart';
 import 'package:safraa_passenger_app/core/services/cache_service.dart';
 import 'package:safraa_passenger_app/core/services/realtime_service.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
@@ -30,6 +35,18 @@ class TrackingPageController extends GetxController {
   /// handed_off) أو null إن كان جاريًا.
   final endedReason = RxnString();
 
+  final driverIcon = Rxn<BitmapDescriptor>();
+  final passengerIcon = Rxn<BitmapDescriptor>();
+
+  /// المسار المتوقع من موقع السائق إلى نقطة الصعود.
+  final routePoints = <LatLng>[].obs;
+
+  /// true = خط مستقيم احتياطي لأن Directions غير متاح.
+  final routeIsApproximate = false.obs;
+  LatLng? _routeOrigin;
+  DateTime? _routeFetchedAt;
+  bool _routeLoading = false;
+
   GoogleMapController? mapController;
   StreamSubscription<RealtimeEvent>? _eventsSub;
   StreamSubscription<void>? _reconnectSub;
@@ -41,10 +58,24 @@ class TrackingPageController extends GetxController {
     super.onInit();
     final args = Get.arguments;
     bookingId = args is Map ? (args["bookingId"] as int) : 0;
+    _loadMarkerIcons();
     _eventsSub = realtime.events.stream.listen(_onEvent);
     // كل deploy يقطع الـ sockets ولا يُعاد إرسال ما فات → لقطة جديدة.
     _reconnectSub = realtime.reconnected.stream.listen((_) => _loadSnapshot());
     _load();
+  }
+
+  Future<void> _loadMarkerIcons() async {
+    driverIcon.value = await MapMarkerBuilder.build(
+      icon: Icons.directions_car,
+      label: "tracking_driver_label".tr,
+      color: ColorManager.colorPrimary,
+    );
+    passengerIcon.value = await MapMarkerBuilder.build(
+      icon: Icons.person,
+      label: "tracking_you_label".tr,
+      color: Colors.green.shade700,
+    );
   }
 
   Future<void> _load() async {
@@ -144,6 +175,73 @@ class TrackingPageController extends GetxController {
     mapController?.animateCamera(
       CameraUpdate.newLatLng(LatLng(p.latitude, p.longitude)),
     );
+    _updateRoute(p);
+  }
+
+  /// أفضل مسار (أسرع بديل) من موقع السائق إلى نقطة الصعود. نعيد الطلب فقط إذا
+  /// تحرك السائق أكثر من 150م أو مرت دقيقة، لتخفيف استهلاك Directions.
+  Future<void> _updateRoute(TrackingPositionModel p) async {
+    final pickup = booking.value?.pickup;
+    if (pickup == null || !pickup.hasCoordinates || endedReason.value != null) {
+      return;
+    }
+    final origin = LatLng(p.latitude, p.longitude);
+    final last = _routeOrigin;
+    if (_routeLoading) return;
+    if (last != null &&
+        DateTime.now().difference(_routeFetchedAt!) <
+            const Duration(minutes: 1) &&
+        _distanceMeters(last, origin) < 150) {
+      return;
+    }
+    _routeLoading = true;
+    try {
+      final destination = LatLng(pickup.latitude!, pickup.longitude!);
+      final routes = await DirectionsService.fetch(origin, destination);
+      _routeOrigin = origin;
+      _routeFetchedAt = DateTime.now();
+      // عند فشل Directions نرسم خطًا مباشرًا بين النقطتين بدل ترك الخريطة بلا مسار.
+      final points = routes.isEmpty
+          ? [origin, destination]
+          : routes
+                .reduce(
+                  (a, b) => a.durationSeconds <= b.durationSeconds ? a : b,
+                )
+                .points;
+      final first = routePoints.isEmpty;
+      routeIsApproximate.value = routes.isEmpty;
+      routePoints.assignAll(points);
+      if (first) _fitRoute(origin, destination);
+    } finally {
+      _routeLoading = false;
+    }
+  }
+
+  /// يظهر السائق ونقطة الصعود معًا عند أول رسم للمسار.
+  void _fitRoute(LatLng a, LatLng b) {
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(a.latitude, b.latitude),
+        math.min(a.longitude, b.longitude),
+      ),
+      northeast: LatLng(
+        math.max(a.latitude, b.latitude),
+        math.max(a.longitude, b.longitude),
+      ),
+    );
+    mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  }
+
+  static double _distanceMeters(LatLng a, LatLng b) {
+    const r = 6371000.0;
+    final dLat = (b.latitude - a.latitude) * math.pi / 180;
+    final dLng = (b.longitude - a.longitude) * math.pi / 180;
+    final h =
+        math.pow(math.sin(dLat / 2), 2) +
+        math.cos(a.latitude * math.pi / 180) *
+            math.cos(b.latitude * math.pi / 180) *
+            math.pow(math.sin(dLng / 2), 2);
+    return 2 * r * math.asin(math.sqrt(h));
   }
 
   /// عمر آخر تحديث بالدقائق (للعرض "آخر تحديث"). ETA عمره دقائق = قديم لا خاطئ.

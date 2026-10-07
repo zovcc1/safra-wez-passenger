@@ -1,3 +1,4 @@
+import 'package:safraa_passenger_app/core/app/app_page_transition.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/presentation/pages/auth/forgot_password_page/forgot_password_page.dart';
 import 'package:safraa_passenger_app/presentation/pages/booking_details_page/booking_details_page.dart';
@@ -47,7 +48,7 @@ import 'package:safraa_passenger_app/presentation/pages/visa_request_form_page/v
 import 'package:safraa_passenger_app/presentation/pages/visa_request_form_page/visa_request_form_page_controller.dart';
 
 abstract class NavigationManager {
-  static final getPages = <GetPage>[
+  static final List<GetPage> _pages = <GetPage>[
     GetPage(
       name: AppRoutes.splashRoute,
       page: () => const SplashPage(),
@@ -163,6 +164,11 @@ abstract class NavigationManager {
       page: () => const ComplaintDetailsPage(),
       binding: BindingsBuilder.put(() => ComplaintDetailsPageController()),
     ),
+  ];
+
+  /// كل الصفحات بانتقال التطبيق الموحّد ([AppPageTransition]).
+  static final List<GetPage> getPages = [
+    for (final page in _pages) page.copy(customTransition: AppPageTransition()),
   ];
 }
 

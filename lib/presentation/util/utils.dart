@@ -285,7 +285,7 @@ class Utils {
   static Future<PlatformFile?> filePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['jpg', 'png', 'pdf'],
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
     );
     if (result != null) {
       return result.files.first;

@@ -7,6 +7,7 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.
 import 'package:safraa_passenger_app/presentation/pages/pickup_picker_page/pickup_picker_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class PickupPickerPage extends GetView<PickupPickerPageController> {
   const PickupPickerPage({super.key});
@@ -286,10 +287,7 @@ class _SearchBar extends StatelessWidget {
                         child: SizedBox(
                           width: AppSize.s18,
                           height: AppSize.s18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: ColorManager.colorPrimary,
-                          ),
+                          child: AppLoader.dots(size: 14),
                         ),
                       )
                     : IconButton(
@@ -419,10 +417,7 @@ class _MapIconButton extends StatelessWidget {
         child: loading
             ? Padding(
                 padding: const EdgeInsets.all(11),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: ColorManager.colorPrimary,
-                ),
+                child: AppLoader.dots(size: 14),
               )
             : Icon(icon, size: 22, color: ColorManager.colorPrimary),
       ),

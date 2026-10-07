@@ -4,12 +4,15 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/payment_request_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/payment_request_details_page/payment_request_details_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/money_formatter.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
 
 class PaymentRequestDetailsPage
     extends GetView<PaymentRequestDetailsPageController> {
@@ -26,15 +29,7 @@ class PaymentRequestDetailsPage
           child: Obx(() {
             final state = controller.loadingState.value;
             if (state == LoadingState.loading || state == LoadingState.idle) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.only(top: 120),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ],
-              );
+              return const AppPageLoader();
             }
             if (state == LoadingState.hasError) {
               return ListView(
@@ -67,73 +62,117 @@ class PaymentRequestDetailsPage
     final route = r.target?.route;
     final departure = r.target?.departureTime;
     final color = _statusColor(r.status);
+    final seatsText = r.seats.isEmpty
+        ? "${r.seatsCount}"
+        : r.seats.map((s) => s.seatNumber).join("، ");
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppPadding.p16),
       children: [
+        // ---- الحالة + المبلغ
         _card(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.payments_outlined, size: 20, color: color),
-              ),
-              const SizedBox(width: AppPadding.p12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _statusLabel(r),
-                      style: TextStyle(
-                        fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
                     ),
-                    if (!r.isPending) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _terminalText(r),
-                        style: TextStyle(
-                          fontSize: FontSize.s12,
-                          color: ColorManager.colorGrey6,
-                        ),
-                      ),
-                    ],
-                    if (r.isPending) ...[
-                      const SizedBox(height: 2),
-                      Obx(() {
-                        final s = controller.secondsLeft.value;
-                        final mm = (s ~/ 60).toString().padLeft(2, "0");
-                        final ss = (s % 60).toString().padLeft(2, "0");
-                        return Text(
-                          "payment_request_time_left".trParams({
-                            "time": "$mm:$ss",
-                          }),
+                    child: Icon(
+                      Icons.payments_outlined,
+                      size: 20,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(width: AppPadding.p12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _statusLabel(r),
                           style: TextStyle(
-                            fontSize: FontSize.s12,
-                            fontWeight: FontWeight.w600,
-                            color: s < 60
-                                ? ColorManager.colorError500
-                                : ColorManager.colorFontPrimary,
+                            fontSize: FontSize.s15,
+                            fontWeight: FontWeight.bold,
+                            color: color,
                           ),
-                        );
+                        ),
+                        if (!r.isPending) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _terminalText(r),
+                            style: TextStyle(
+                              fontSize: FontSize.s12,
+                              color: ColorManager.colorGrey6,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (r.isPending) ...[
+                const SizedBox(height: AppPadding.p10),
+                Obx(() {
+                  final s = controller.secondsLeft.value;
+                  final mm = (s ~/ 60).toString().padLeft(2, "0");
+                  final ss = (s % 60).toString().padLeft(2, "0");
+                  final urgent = s < 60;
+                  return Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: InfoPill(
+                      icon: Icons.timer_outlined,
+                      color: urgent
+                          ? ColorManager.colorError500
+                          : ColorManager.colorOrange,
+                      text: "payment_request_time_left".trParams({
+                        "time": "$mm:$ss",
                       }),
-                    ],
-                  ],
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: AppPadding.p10),
+              Divider(
+                height: 1,
+                color: ColorManager.colorTextFieldEnabledBorder,
+              ),
+              const SizedBox(height: AppPadding.p10),
+              Center(
+                child: Text(
+                  "payment_request_amount".tr,
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    color: ColorManager.colorGrey6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Center(
+                child: Text(
+                  // المبلغ نص من الخادم ولا يُحوَّل إلى float.
+                  Money.format(r.amount),
+                  style: TextStyle(
+                    fontSize: FontSize.s24,
+                    fontWeight: FontWeight.bold,
+                    color: ColorManager.colorPrimary,
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: AppPadding.p12),
+        // ---- الرحلة
         _card(
+          delayMs: 70,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -168,132 +207,118 @@ class PaymentRequestDetailsPage
                   }),
                 ),
               ],
-              const SizedBox(height: AppPadding.p8),
-              _row(
-                "payment_request_seats".tr,
-                r.seats.isEmpty
-                    ? "${r.seatsCount}"
-                    : r.seats.map((s) => s.seatNumber).join("، "),
-              ),
-              _row(
-                "payment_request_payment_method".tr,
-                "create_booking_payment_wallet_short".tr,
-              ),
-              const SizedBox(height: AppPadding.p4),
-              Divider(
-                height: 1,
-                color: ColorManager.colorTextFieldEnabledBorder,
-              ),
-              const SizedBox(height: AppPadding.p8),
-              _row(
-                "payment_request_amount".tr,
-                // المبلغ نص من الخادم ولا يُحوَّل إلى float.
-                "${r.amount} ${r.currency}",
-                bold: true,
+              const SizedBox(height: AppPadding.p10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoTile(
+                      icon: Icons.event_seat_outlined,
+                      label: "payment_request_seats".tr,
+                      value: seatsText,
+                    ),
+                  ),
+                  const SizedBox(width: AppPadding.p8),
+                  Expanded(
+                    child: _InfoTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: "payment_request_payment_method".tr,
+                      value: "create_booking_payment_wallet_short".tr,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
         const SizedBox(height: AppPadding.p12),
-        if (r.isPending) ...[
-          Obx(() {
-            if (!controller.insufficientBalance.value) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppPadding.p8),
-              child: AppButton(
-                text: "payment_request_top_up_wallet".tr,
-                backgroundColor: ColorManager.colorWhite,
-                fontColor: ColorManager.colorPrimary,
-                border: Border.all(
-                  color: ColorManager.colorPrimary.withValues(alpha: 0.4),
+        FadeSlideIn(
+          delay: const Duration(milliseconds: 140),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (r.isPending) ...[
+                Obx(() {
+                  if (!controller.insufficientBalance.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppPadding.p8),
+                    child: AppButton(
+                      text: "payment_request_top_up_wallet".tr,
+                      backgroundColor: ColorManager.colorWhite,
+                      fontColor: ColorManager.colorPrimary,
+                      border: Border.all(
+                        color: ColorManager.colorPrimary.withValues(alpha: 0.4),
+                      ),
+                      radius: 12,
+                      minHeight: 42,
+                      onPressed: controller.openWallet,
+                    ),
+                  );
+                }),
+                Obx(
+                  () => AppButton(
+                    text: "payment_request_approve".tr,
+                    radius: 12,
+                    minHeight: 42,
+                    loadingMode: controller.acting.value,
+                    onPressed: controller.acting.value
+                        ? null
+                        : controller.approve,
+                  ),
                 ),
-                radius: 12,
-                minHeight: 42,
-                onPressed: controller.openWallet,
-              ),
-            );
-          }),
-          Obx(
-            () => AppButton(
-              text: "payment_request_approve".tr,
-              radius: 12,
-              minHeight: 42,
-              loadingMode: controller.acting.value,
-              onPressed: controller.acting.value ? null : controller.approve,
-            ),
+                const SizedBox(height: AppPadding.p8),
+                Obx(
+                  () => AppButton(
+                    text: "payment_request_reject".tr,
+                    backgroundColor: ColorManager.colorError500.withValues(
+                      alpha: 0.08,
+                    ),
+                    fontColor: ColorManager.colorError500,
+                    border: Border.all(
+                      color: ColorManager.colorError500.withValues(alpha: 0.4),
+                    ),
+                    radius: 12,
+                    minHeight: 42,
+                    onPressed: controller.acting.value
+                        ? null
+                        : controller.reject,
+                  ),
+                ),
+              ] else if (r.status == "approved")
+                AppButton(
+                  text: "payment_request_open_booking".tr,
+                  radius: 12,
+                  minHeight: 42,
+                  onPressed: controller.openBooking,
+                ),
+            ],
           ),
-          const SizedBox(height: AppPadding.p8),
-          Obx(
-            () => AppButton(
-              text: "payment_request_reject".tr,
-              backgroundColor: ColorManager.colorError500.withValues(
-                alpha: 0.08,
-              ),
-              fontColor: ColorManager.colorError500,
-              border: Border.all(
-                color: ColorManager.colorError500.withValues(alpha: 0.4),
-              ),
-              radius: 12,
-              minHeight: 42,
-              onPressed: controller.acting.value ? null : controller.reject,
-            ),
-          ),
-        ] else if (r.status == "approved")
-          AppButton(
-            text: "payment_request_open_booking".tr,
-            radius: 12,
-            minHeight: 42,
-            onPressed: controller.openBooking,
-          ),
+        ),
       ],
     );
   }
 
-  Widget _card({required Widget child}) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppPadding.p12,
-      vertical: AppPadding.p10,
-    ),
-    decoration: BoxDecoration(
-      color: ColorManager.colorWhite,
-      borderRadius: BorderRadius.circular(AppSize.s16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: child,
-  );
-
-  Widget _row(String label, String value, {bool bold = false}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: FontSize.s13,
-            color: ColorManager.colorGrey6,
+  Widget _card({required Widget child, int delayMs = 0}) => FadeSlideIn(
+    delay: Duration(milliseconds: delayMs),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppPadding.p12,
+        vertical: AppPadding.p10,
+      ),
+      decoration: BoxDecoration(
+        color: ColorManager.colorWhite,
+        borderRadius: BorderRadius.circular(AppSize.s16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: bold ? FontSize.s16 : FontSize.s13,
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-            color: bold
-                ? ColorManager.colorPrimary
-                : ColorManager.colorFontPrimary,
-          ),
-        ),
-      ],
+        ],
+      ),
+      child: child,
     ),
   );
 
@@ -329,5 +354,64 @@ class PaymentRequestDetailsPage
       default:
         return "";
     }
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  const _InfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppPadding.p10,
+        vertical: AppPadding.p8,
+      ),
+      decoration: BoxDecoration(
+        color: ColorManager.colorBackground,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: ColorManager.colorPrimary),
+          const SizedBox(width: AppPadding.p8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: FontSize.s10,
+                    color: ColorManager.colorGrey6,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    fontWeight: FontWeight.bold,
+                    color: ColorManager.colorFontPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
