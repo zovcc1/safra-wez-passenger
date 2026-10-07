@@ -6,7 +6,7 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/pages/payment_requests_page/payment_requests_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
@@ -154,7 +154,7 @@ class PaymentRequestsPage extends GetView<PaymentRequestsPageController> {
         AppPadding.p16,
       ),
       itemCount: items.length + (controller.loadingMore.value ? 1 : 0),
-      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
+      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
       itemBuilder: (_, index) {
         if (index >= items.length) {
           return const Padding(
@@ -190,135 +190,79 @@ class _RequestCard extends StatelessWidget {
       _ => ColorManager.colorError300,
     };
 
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.payments_outlined,
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        route?.displayName ?? "#${request.paymentRequestId}",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: FontSize.s15,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorFontPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        "payment_request_status_${request.status}".tr,
-                        style: TextStyle(
-                          fontSize: FontSize.s10_5,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                    ),
-                  ],
+    final seatsText = "payment_requests_seats_count".trParams({
+      "count": "${request.seatsCount}",
+    });
+
+    return TripCardShell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TripCardHeader(
+            title: route?.displayName ?? "#${request.paymentRequestId}",
+            badge: "payment_request_status_${request.status}".tr,
+            badgeColor: color,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              if (departure != null) ...[
+                _Meta(
+                  icon: Icons.calendar_today_rounded,
+                  text: DateConverter.dateToStringAR(departure),
                 ),
-                const SizedBox(height: AppPadding.p8),
-                Wrap(
-                  spacing: AppPadding.p8,
-                  runSpacing: AppPadding.p8,
-                  children: [
-                    InfoPill(
-                      icon: Icons.event_seat_outlined,
-                      text: "payment_requests_seats_count".trParams({
-                        "count": "${request.seatsCount}",
-                      }),
-                    ),
-                    if (departure != null)
-                      InfoPill(
-                        icon: Icons.schedule_outlined,
-                        text: "trips_departure_at".trParams({
-                          "date": DateConverter.dateToStringAR(departure),
-                          "time": DateConverter.timeUTCToString(departure),
-                        }),
-                      ),
-                    if (request.isPending && request.expiresAt != null)
-                      InfoPill(
-                        icon: Icons.timer_outlined,
-                        color: ColorManager.colorOrange,
-                        text: "payment_requests_expires_at".trParams({
-                          "time": DateConverter.timeUTCToString(
-                            request.expiresAt,
-                          ),
-                        }),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Divider(
-                  height: 1,
-                  color: ColorManager.colorTextFieldEnabledBorder,
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Row(
-                  children: [
-                    // المبلغ نص من الخادم ولا يُحوَّل إلى float.
-                    Expanded(
-                      child: Text(
-                        Money.format(request.amount),
-                        style: TextStyle(
-                          fontSize: FontSize.s16,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
-                      color: ColorManager.colorGrey6,
-                    ),
-                  ],
+                _Meta(
+                  icon: Icons.access_time_rounded,
+                  text: DateConverter.timeUTCToString(departure),
                 ),
               ],
+              _Meta(icon: Icons.event_seat_outlined, text: seatsText),
+              if (request.isPending && request.expiresAt != null)
+                _Meta(
+                  icon: Icons.timer_outlined,
+                  color: ColorManager.colorOrange,
+                  text: "payment_requests_expires_at".trParams({
+                    "time": DateConverter.timeUTCToString(request.expiresAt),
+                  }),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // المبلغ نص من الخادم ولا يُحوَّل إلى float.
+          TripCardFooter(price: Money.format(request.amount)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Meta extends StatelessWidget {
+  const _Meta({required this.icon, required this.text, this.color});
+
+  final IconData icon;
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color ?? ColorManager.colorGrey6),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: FontSize.s12,
+              color: color ?? ColorManager.colorDoveGray600,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/dto/submit_visa_request_dto.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
+import 'package:safraa_passenger_app/data/models/visa_document_model.dart';
 import 'package:safraa_passenger_app/data/models/visa_field_model.dart';
 import 'package:safraa_passenger_app/data/models/visa_form_model.dart';
+import 'package:safraa_passenger_app/data/models/visa_request_model.dart';
 import 'package:safraa_passenger_app/data/repos/visa_repo.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/custom_toasts.dart';
@@ -33,6 +35,10 @@ class VisaRequestFormPageController extends GetxController {
 
   final Map<int, TextEditingController> textControllers = {};
   final Map<int, Rxn<File>> fileValues = {};
+
+  /// الملفات المرفوعة سابقًا بوضعي التعديل وإعادة الإرسال (حسب field_id).
+  /// تبقى كما هي على الخادم ما لم يختر المستخدم ملفًا جديدًا.
+  final Map<int, VisaDocumentModel> existingDocuments = {};
   final Set<int> touchedFields = {};
 
   final fieldErrors = <String, String>{}.obs;
@@ -59,6 +65,7 @@ class VisaRequestFormPageController extends GetxController {
     }
     textControllers.clear();
     fileValues.clear();
+    existingDocuments.clear();
     touchedFields.clear();
     final response = await visaRepo.form(countryId);
     if (!response.success) {
@@ -81,7 +88,38 @@ class VisaRequestFormPageController extends GetxController {
       }
     }
 
+    // وضعا التعديل وإعادة الإرسال: تُعبَّأ الحقول بقيم الطلب الحالي، وإلا
+    // يظهر النموذج فارغًا ويبدو كأن البيانات ضاعت.
+    if (mode != VisaFormMode.create && requestId != null) {
+      final current = await visaRepo.details(requestId!);
+      if (!current.success) {
+        loadingState.value = LoadingState.hasError;
+        CustomToasts(
+          message: current.getErrorMessage(),
+          type: CustomToastType.error,
+        ).show();
+        return;
+      }
+      _prefill(current.data!, loadedForm);
+    }
+
     loadingState.value = LoadingState.doneWithData;
+  }
+
+  /// لا تُعلَّم الحقول كـ touched: غير الملموسة لا تُرسل، فلا يُعاد رفع
+  /// قيم لم يغيّرها المستخدم.
+  void _prefill(VisaRequestModel request, VisaFormModel loadedForm) {
+    for (final field in loadedForm.fields) {
+      if (field.type == "file") {
+        final doc = request.documents
+            .where((d) => d.fieldId == field.fieldId)
+            .firstOrNull;
+        if (doc != null) existingDocuments[field.fieldId] = doc;
+      } else {
+        textControllers[field.fieldId]?.text =
+            request.values[field.fieldId] ?? "";
+      }
+    }
   }
 
   void onTextChanged(int fieldId, String value) => touchedFields.add(fieldId);

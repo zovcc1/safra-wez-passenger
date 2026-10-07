@@ -3,11 +3,11 @@ import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/complaint_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/complaint_status_chip.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/complaints_page/complaints_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/complaint_display.dart';
@@ -22,24 +22,28 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "complaints_title".tr, backIcon: true),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: ColorManager.colorPrimary,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        highlightElevation: 3,
+        extendedPadding: const EdgeInsets.symmetric(horizontal: 18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         onPressed: controller.fileNew,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        icon: const Icon(Icons.add_rounded, size: 20),
         label: Text(
           "complaints_file_new".tr,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: FontSize.s13, fontWeight: FontWeight.w500),
         ),
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.reload,
-          child: Obx(() => _body()),
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.reload,
+            child: Obx(() => _body()),
+          ),
         ),
       ),
     );
@@ -102,7 +106,7 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
       ),
       itemCount:
           controller.complaints.length + (controller.loadingMore.value ? 1 : 0),
-      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
+      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
       itemBuilder: (context, index) {
         if (index >= controller.complaints.length) {
           return Padding(
@@ -138,99 +142,75 @@ class _ComplaintCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = ComplaintStatusDisplay.of(complaint.status);
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          // awaiting_passenger هي الحالة الوحيدة التي تطلب إجراءً من المسافر.
-          border: complaint.isAwaitingPassenger
-              ? Border.all(color: status.color, width: 1.5)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      complaintCategoryIcon(complaint.category),
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        categoryLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: FontSize.s15,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorFontPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppPadding.p8),
-                    ComplaintStatusChip(status: complaint.status),
-                  ],
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Text(
-                  complaint.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s13,
-                    color: ColorManager.colorFontPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Wrap(
-                  spacing: AppPadding.p8,
-                  runSpacing: AppPadding.p8,
-                  children: [
-                    InfoPill(
-                      icon: Icons.tag,
-                      text: "#${complaint.complaintId}",
-                    ),
-                    InfoPill(
-                      icon: Icons.calendar_today_outlined,
-                      text: DateConverter.dateToStringAR(complaint.createdAt),
-                    ),
-                    if (complaint.bookingId != null)
-                      InfoPill(
-                        icon: Icons.confirmation_number_outlined,
-                        text: "#${complaint.bookingId}",
-                      ),
-                    if (complaint.isAwaitingPassenger)
-                      InfoPill(
-                        icon: Icons.mark_chat_unread_outlined,
-                        color: status.color,
-                        text: "complaint_needs_reply".tr,
-                      ),
-                  ],
-                ),
-              ],
+    return TripCardShell(
+      onTap: onTap,
+      // awaiting_passenger هي الحالة الوحيدة التي تطلب إجراءً من المسافر.
+      borderColor: complaint.isAwaitingPassenger ? status.color : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TripCardHeader(
+            icon: complaintCategoryIcon(complaint.category),
+            title: categoryLabel,
+            badge: status.label,
+            badgeColor: status.color,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            complaint.description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: FontSize.s12,
+              height: 1.5,
+              color: ColorManager.colorDoveGray600,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Divider(
+            height: 1,
+            color: ColorManager.colorTextFieldEnabledBorder.withValues(
+              alpha: 0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (complaint.isAwaitingPassenger)
+                      TripCardChip(
+                        icon: Icons.mark_chat_unread_outlined,
+                        color: status.color,
+                        label: "complaint_needs_reply".tr,
+                      ),
+                    TripCardChip(
+                      icon: Icons.tag,
+                      color: ColorManager.colorGrey6,
+                      label: "${complaint.complaintId}",
+                    ),
+                    TripCardChip(
+                      icon: Icons.calendar_today_outlined,
+                      color: ColorManager.colorGrey6,
+                      label: DateConverter.dateToStringAR(complaint.createdAt),
+                    ),
+                    if (complaint.bookingId != null)
+                      TripCardChip(
+                        icon: Icons.confirmation_number_outlined,
+                        color: ColorManager.colorGrey6,
+                        label: "${complaint.bookingId}",
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const TripCardArrow(),
+            ],
+          ),
+        ],
       ),
     );
   }

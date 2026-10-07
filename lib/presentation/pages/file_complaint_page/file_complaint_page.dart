@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/complaint_category_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/custom_text_field.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
@@ -21,9 +22,9 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: ColorManager.colorBackground,
+        backgroundColor: Colors.transparent,
         appBar: NormalAppBar(title: "file_complaint_title".tr, backIcon: true),
-        body: SafeArea(child: Obx(() => _body())),
+        body: AppBackground(child: SafeArea(child: Obx(() => _body()))),
       ),
     );
   }
@@ -68,7 +69,7 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
                 children: [
                   FadeSlideIn(child: const _IntroCard()),
                   if (controller.bookingId != null) ...[
-                    const SizedBox(height: AppPadding.p12),
+                    const SizedBox(height: AppPadding.p8),
                     FadeSlideIn(
                       delay: const Duration(milliseconds: 50),
                       child: _BookingLinkBanner(
@@ -76,7 +77,7 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 100),
                     child: _CardShell(
@@ -115,7 +116,7 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 160),
                     child: _CardShell(
@@ -135,7 +136,7 @@ class FileComplaintPage extends GetView<FileComplaintPageController> {
                                 controller.descriptionController,
                             textInputType: TextInputType.multiline,
                             textInputAction: TextInputAction.newline,
-                            fillColor: ColorManager.colorBackground,
+                            fillColor: ColorManager.colorWhite,
                             borderRadius: 10,
                             maxLines: 5,
                             minLines: 5,
@@ -170,7 +171,7 @@ class _CardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -179,7 +180,7 @@ class _CardShell extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -198,11 +199,11 @@ class _IntroCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: ColorManager.colorPrimary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+              color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.support_agent_rounded,
@@ -219,7 +220,7 @@ class _IntroCard extends StatelessWidget {
                   "file_complaint_intro_title".tr,
                   style: TextStyle(
                     fontSize: FontSize.s15,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
@@ -253,27 +254,18 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: FontSize.s13,
+      fontWeight: FontWeight.w500,
+      color: ColorManager.colorDoveGray600,
+    );
     return Row(
       children: [
-        Icon(icon, size: AppSize.s20, color: ColorManager.colorPrimary),
+        Icon(icon, size: 18, color: ColorManager.colorPrimary),
         const SizedBox(width: AppPadding.p8),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: FontSize.s15,
-            fontWeight: FontWeight.bold,
-            color: ColorManager.colorFontPrimary,
-          ),
-        ),
+        Text(text, style: style),
         if (required)
-          Text(
-            " *",
-            style: TextStyle(
-              fontSize: FontSize.s15,
-              fontWeight: FontWeight.bold,
-              color: ColorManager.colorError300,
-            ),
-          ),
+          Text(" *", style: style.copyWith(color: ColorManager.colorError300)),
       ],
     );
   }
@@ -299,7 +291,7 @@ class _CategoryGrid extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: AppPadding.p8,
           crossAxisSpacing: AppPadding.p8,
-          mainAxisExtent: 46,
+          mainAxisExtent: 42,
         ),
         itemBuilder: (context, index) {
           final category = categories[index];
@@ -337,11 +329,13 @@ class _CategoryTile extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
         color: selected
-            ? ColorManager.colorPrimary.withValues(alpha: 0.08)
-            : ColorManager.colorBackground,
+            ? ColorManager.colorPrimary.withValues(alpha: 0.06)
+            : ColorManager.colorWhite,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: selected ? ColorManager.colorPrimary : Colors.transparent,
+          color: selected
+              ? ColorManager.colorPrimary
+              : ColorManager.colorTextFieldEnabledBorder,
         ),
       ),
       child: Material(
@@ -366,7 +360,7 @@ class _CategoryTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: FontSize.s12,
-                      fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
                       color: selected
                           ? ColorManager.colorPrimary
                           : ColorManager.colorFontPrimary,
@@ -437,7 +431,7 @@ class _BookingLinkBanner extends StatelessWidget {
             "file_complaint_linked_booking".trParams({"id": "$bookingId"}),
             style: TextStyle(
               fontSize: FontSize.s13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorPrimary,
             ),
           ),

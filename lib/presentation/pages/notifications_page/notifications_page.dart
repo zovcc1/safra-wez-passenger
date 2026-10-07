@@ -6,7 +6,8 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/notifications_page/notifications_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
@@ -21,7 +22,8 @@ class NotificationsPage extends GetView<NotificationsPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: false,
       appBar: NormalAppBar(
         title: "main_tab_notifications".tr,
         backIcon: true,
@@ -33,17 +35,19 @@ class NotificationsPage extends GetView<NotificationsPageController> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _filters(),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: controller.reload,
-                child: Obx(_body),
+      body: AppBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              _filters(),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: controller.reload,
+                  child: Obx(_body),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -129,7 +133,7 @@ class NotificationsPage extends GetView<NotificationsPageController> {
         AppPadding.p16,
       ),
       itemCount: items.length + (controller.loadingMore.value ? 1 : 0),
-      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
+      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
       itemBuilder: (_, index) {
         if (index >= items.length) {
           return const Padding(
@@ -177,8 +181,8 @@ class _FilterPill extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -186,7 +190,7 @@ class _FilterPill extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           style: DefaultTextStyle.of(context).style.copyWith(
             fontSize: FontSize.s12,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
             color: selected ? Colors.white : ColorManager.colorGrey6,
           ),
           child: Text(label),
@@ -205,99 +209,75 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final created = item.createdAt?.toLocal();
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return TripCardShell(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: ColorManager.colorPrimary.withValues(
+                alpha: item.isRead ? 0.08 : 0.14,
+              ),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
+            child: Icon(
+              _icon(item.type),
+              size: 18,
+              color: ColorManager.colorPrimary,
             ),
-            child: Row(
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: ColorManager.colorPrimary.withValues(
-                      alpha: item.isRead ? 0.08 : 0.14,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _icon(item.type),
-                    size: 18,
-                    color: ColorManager.colorPrimary,
-                  ),
-                ),
-                const SizedBox(width: AppPadding.p12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // title نص لنوعَي الحملات فقط، و null لبقية الأنواع.
-                      if (item.title != null && item.title!.isNotEmpty) ...[
-                        Text(
-                          item.title!,
-                          style: TextStyle(
-                            fontSize: FontSize.s14,
-                            fontWeight: FontWeight.bold,
-                            color: ColorManager.colorFontPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                      ],
-                      Text(
-                        item.message,
-                        style: TextStyle(
-                          fontSize: FontSize.s13,
-                          fontWeight: item.isRead
-                              ? FontWeight.normal
-                              : FontWeight.w600,
-                          color: ColorManager.colorFontPrimary,
-                        ),
-                      ),
-                      if (created != null) ...[
-                        const SizedBox(height: AppPadding.p8),
-                        InfoPill(
-                          icon: Icons.schedule_outlined,
-                          text:
-                              "${DateConverter.dateToStringAR(created)} "
-                              "${DateConverter.timeUTCToString(created)}",
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (!item.isRead)
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(top: 6),
-                    decoration: BoxDecoration(
-                      color: ColorManager.colorPrimary,
-                      shape: BoxShape.circle,
+                // title نص لنوعَي الحملات فقط، و null لبقية الأنواع.
+                if (item.title != null && item.title!.isNotEmpty) ...[
+                  Text(
+                    item.title!,
+                    style: TextStyle(
+                      fontSize: FontSize.s13,
+                      fontWeight: FontWeight.w500,
+                      color: ColorManager.colorFontPrimary,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                ],
+                Text(
+                  item.message,
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    fontWeight: item.isRead ? FontWeight.w400 : FontWeight.w500,
+                    color: ColorManager.colorFontPrimary,
+                  ),
+                ),
+                if (created != null) ...[
+                  const SizedBox(height: 6),
+                  TripCardChip(
+                    icon: Icons.schedule_outlined,
+                    color: ColorManager.colorGrey6,
+                    label:
+                        "${DateConverter.dateToStringAR(created)} "
+                        "${DateConverter.timeUTCToString(created)}",
+                  ),
+                ],
               ],
             ),
           ),
-        ),
+          if (!item.isRead)
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: ColorManager.colorPrimary,
+                shape: BoxShape.circle,
+              ),
+            ),
+        ],
       ),
     );
   }

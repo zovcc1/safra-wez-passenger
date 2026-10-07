@@ -4,6 +4,7 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_document_model.dart';
 import 'package:safraa_passenger_app/data/models/visa_field_model.dart';
 import 'package:safraa_passenger_app/data/models/visa_request_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
@@ -24,12 +25,14 @@ class VisaRequestDetailsPage extends GetView<VisaRequestDetailsPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "visa_details_title".tr, backIcon: true),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.retry,
-          child: Obx(() => _body()),
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.retry,
+            child: Obx(() => _body()),
+          ),
         ),
       ),
     );
@@ -79,7 +82,7 @@ class VisaRequestDetailsPage extends GetView<VisaRequestDetailsPageController> {
       padding: const EdgeInsets.all(AppPadding.p16),
       children: [
         staggered(_StatusHeader(request: request)),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         // راجع القسم ٧ بالوثيقة: سبب الإلغاء cancelled داخلي فقط — الحقلان
         // الوحيدان اللذان يكتبان admin_note يراه الراكب هما request-correction
         // (needs_info) وreject (rejected). عرضه بحالة cancelled قد يظهر ملاحظة
@@ -87,19 +90,19 @@ class VisaRequestDetailsPage extends GetView<VisaRequestDetailsPageController> {
         if ((status == "needs_info" || status == "rejected") &&
             (request.adminNote?.isNotEmpty ?? false)) ...[
           staggered(_AdminNoteCard(note: request.adminNote!, status: status)),
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
         ],
         if (request.form != null && request.form!.fields.isNotEmpty) ...[
           staggered(_DataCard(request: request)),
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
         ],
         if (request.otherDocuments.isNotEmpty) ...[
           staggered(_DocumentsCard(documents: request.otherDocuments)),
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
         ],
         if (request.hasTimeline) ...[
           staggered(_TimelineCard(request: request)),
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
         ],
         if (request.canEdit || request.canResubmit || request.canWithdraw)
           staggered(_ActionsRow(request: request)),
@@ -117,18 +120,15 @@ class _CardFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
-        vertical: AppPadding.p10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: ColorManager.colorWhite,
-        borderRadius: BorderRadius.circular(AppSize.s16),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x121B2559),
+            blurRadius: 18,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -137,6 +137,7 @@ class _CardFrame extends StatelessWidget {
   }
 }
 
+/// بطاقة الملخص: الدولة + الحالة + السعر وطريقة الدفع.
 class _StatusHeader extends StatelessWidget {
   const _StatusHeader({required this.request});
 
@@ -145,26 +146,27 @@ class _StatusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = VisaStatusDisplay.of(request.status);
+    final hasPayment = request.paymentMethod != null;
+    final hasProvider = request.visaProviderName != null;
     return _CardFrame(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: status.color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  color: ColorManager.colorPrimary,
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.badge_outlined,
-                  color: status.color,
-                  size: 20,
+                  color: Colors.white,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: AppPadding.p12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,88 +176,115 @@ class _StatusHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                         color: ColorManager.colorFontPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "#${request.id}",
+                      "visa_details_request_number".trParams({
+                        "id": "${request.id}",
+                      }),
                       style: TextStyle(
-                        fontSize: FontSize.s12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                         color: ColorManager.colorGrey6,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppPadding.p8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: status.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status.label,
-                  style: TextStyle(
-                    fontSize: FontSize.s10_5,
-                    fontWeight: FontWeight.bold,
-                    color: status.color,
-                  ),
-                ),
-              ),
+              const SizedBox(width: 8),
+              _StatusPill(label: status.label, color: status.color),
             ],
           ),
-          const SizedBox(height: AppPadding.p10),
-          Divider(height: 1, color: ColorManager.colorTextFieldEnabledBorder),
-          const SizedBox(height: AppPadding.p10),
-          Center(
-            child: Text(
-              "visa_details_price_label".tr,
-              style: TextStyle(
-                fontSize: FontSize.s12,
-                color: ColorManager.colorGrey6,
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: ColorManager.colorPrimary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "visa_details_price_label".tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: ColorManager.colorGrey6,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          Money.format(request.quotedAmount),
+                          style: TextStyle(
+                            fontSize: 18,
+                            height: 1.2,
+                            fontWeight: FontWeight.w600,
+                            color: ColorManager.colorPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasPayment || hasProvider) ...[
+                    VerticalDivider(
+                      width: 28,
+                      thickness: 1,
+                      color: ColorManager.colorPrimary.withValues(alpha: 0.15),
+                    ),
+                    Expanded(
+                      child: _SummarySide(
+                        icon: hasPayment
+                            ? Icons.account_balance_wallet_outlined
+                            : Icons.business_outlined,
+                        title: hasPayment
+                            ? _paymentLabel(request.paymentMethod!)
+                            : request.visaProviderName!,
+                        label: hasPayment
+                            ? "payment_request_payment_method".tr
+                            : "visa_details_provider_label".tr,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Center(
-            child: Text(
-              Money.format(request.quotedAmount),
-              style: TextStyle(
-                fontSize: FontSize.s24,
-                fontWeight: FontWeight.bold,
-                color: ColorManager.colorPrimary,
-              ),
-            ),
-          ),
-          if (request.paymentMethod != null ||
-              request.visaProviderName != null) ...[
-            const SizedBox(height: AppPadding.p10),
+          if (hasPayment && hasProvider) ...[
+            const SizedBox(height: 10),
             Row(
               children: [
-                if (request.paymentMethod != null)
-                  Expanded(
-                    child: _InfoTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      label: "payment_request_payment_method".tr,
-                      value: _paymentLabel(request.paymentMethod!),
+                Icon(
+                  Icons.business_outlined,
+                  size: 18,
+                  color: ColorManager.colorGrey6,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "${"visa_details_provider_label".tr}: ",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: ColorManager.colorGrey6,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    request.visaProviderName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: ColorManager.colorFontPrimary,
                     ),
                   ),
-                if (request.paymentMethod != null &&
-                    request.visaProviderName != null)
-                  const SizedBox(width: AppPadding.p8),
-                if (request.visaProviderName != null)
-                  Expanded(
-                    child: _InfoTile(
-                      icon: Icons.business_outlined,
-                      label: "visa_details_provider_label".tr,
-                      value: request.visaProviderName!,
-                    ),
-                  ),
+                ),
               ],
             ),
           ],
@@ -265,57 +294,80 @@ class _StatusHeader extends StatelessWidget {
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
+class _SummarySide extends StatelessWidget {
+  const _SummarySide({
     required this.icon,
+    required this.title,
     required this.label,
-    required this.value,
   });
 
   final IconData icon;
+  final String title;
   final String label;
-  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 22, color: ColorManager.colorGrey6),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: ColorManager.colorFontPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: ColorManager.colorGrey6),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p10,
-        vertical: AppPadding.p8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: ColorManager.colorPrimary),
-          const SizedBox(width: AppPadding.p8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s10,
-                    color: ColorManager.colorGrey6,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s12,
-                    fontWeight: FontWeight.bold,
-                    color: ColorManager.colorFontPrimary,
-                  ),
-                ),
-              ],
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              color: color,
             ),
           ),
         ],
@@ -354,24 +406,36 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: AppSize.s20, color: ColorManager.colorPrimary),
-        const SizedBox(width: 8),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Icon(icon, size: 19, color: ColorManager.colorPrimary),
+        ),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             title,
             style: TextStyle(
-              fontSize: FontSize.s15,
-              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
               color: ColorManager.colorFontPrimary,
             ),
           ),
         ),
         if (trailing != null)
-          Text(
-            trailing!,
-            style: TextStyle(
-              fontSize: FontSize.s11,
-              color: ColorManager.colorGrey6,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            decoration: BoxDecoration(
+              color: ColorManager.colorBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              trailing!,
+              style: TextStyle(fontSize: 10.5, color: ColorManager.colorGrey6),
             ),
           ),
       ],
@@ -390,19 +454,20 @@ class _DataCard extends StatelessWidget {
     final form = request.form!;
     return _CardFrame(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionTitle(
             icon: Icons.assignment_outlined,
             title: "visa_details_section_request".tr,
             trailing: form.displayTitle.isEmpty ? null : form.displayTitle,
           ),
-          const SizedBox(height: AppPadding.p10),
-          for (var i = 0; i < form.fields.length; i++) ...[
-            _FieldValueTile(request: request, field: form.fields[i]),
-            if (i != form.fields.length - 1)
-              const SizedBox(height: AppPadding.p8),
-          ],
+          const SizedBox(height: 4),
+          for (var i = 0; i < form.fields.length; i++)
+            _FieldValueTile(
+              request: request,
+              field: form.fields[i],
+              isLast: i == form.fields.length - 1,
+            ),
         ],
       ),
     );
@@ -410,10 +475,15 @@ class _DataCard extends StatelessWidget {
 }
 
 class _FieldValueTile extends StatelessWidget {
-  const _FieldValueTile({required this.request, required this.field});
+  const _FieldValueTile({
+    required this.request,
+    required this.field,
+    required this.isLast,
+  });
 
   final VisaRequestModel request;
   final VisaFieldModel field;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
@@ -421,14 +491,23 @@ class _FieldValueTile extends StatelessWidget {
       final docs = request.documents
           .where((d) => d.fieldId == field.fieldId)
           .toList();
-      return _TileShell(
-        label: field.displayLabel,
-        child: docs.isEmpty
-            ? _valueText("visa_details_no_value".tr, muted: true)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final doc in docs) _DocumentRow(document: doc)],
-              ),
+      if (docs.isEmpty) {
+        return _FieldRow(
+          label: field.displayLabel,
+          value: "visa_details_no_value".tr,
+          muted: true,
+          isLast: isLast,
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final doc in docs)
+              _DocumentRow(document: doc, label: field.displayLabel),
+          ],
+        ),
       );
     }
 
@@ -440,65 +519,78 @@ class _FieldValueTile extends StatelessWidget {
           .firstOrNull;
       if (match != null) display = Utils.parseLocalizedName(match);
     }
-    return _TileShell(
+    return _FieldRow(
       label: field.displayLabel,
-      child: _valueText(
-        display.isEmpty ? "visa_details_no_value".tr : display,
-        muted: display.isEmpty,
-      ),
+      value: display.isEmpty ? "visa_details_no_value".tr : display,
+      muted: display.isEmpty,
+      isLast: isLast,
     );
   }
-
-  Widget _valueText(String text, {bool muted = false}) => Text(
-    text,
-    style: TextStyle(
-      fontSize: FontSize.s13,
-      fontWeight: FontWeight.w600,
-      color: muted ? ColorManager.colorGrey6 : ColorManager.colorFontPrimary,
-    ),
-  );
 }
 
-class _TileShell extends StatelessWidget {
-  const _TileShell({required this.label, required this.child});
+/// صف حقل: الاسم رمادي في طرف والقيمة في الطرف الآخر، وخط سفلي فاصل.
+class _FieldRow extends StatelessWidget {
+  const _FieldRow({
+    required this.label,
+    required this.value,
+    required this.isLast,
+    this.muted = false,
+  });
 
   final String label;
-  final Widget child;
+  final String value;
+  final bool isLast;
+  final bool muted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
-        vertical: AppPadding.p8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 9),
       decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(10),
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(
+                  color: ColorManager.colorTextFieldEnabledBorder.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
+              ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: FontSize.s11,
-              color: ColorManager.colorGrey6,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: ColorManager.colorGrey6),
             ),
           ),
-          const SizedBox(height: 4),
-          child,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: muted
+                    ? ColorManager.colorGrey6
+                    : ColorManager.colorFontPrimary,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// صف مستند قابل للتنزيل (يُستخدم داخل بطاقة البيانات وبطاقة المستندات).
+/// بطاقة ملف قابل للتنزيل (داخل بطاقة البيانات وبطاقة المستندات).
 class _DocumentRow extends StatelessWidget {
-  const _DocumentRow({required this.document});
+  const _DocumentRow({required this.document, this.label});
 
   final VisaDocumentModel document;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -507,65 +599,105 @@ class _DocumentRow extends StatelessWidget {
       final downloading =
           controller.downloadingDocumentId.value == document.documentId;
       final size = _fileSize(document.sizeBytes);
-      return InkWell(
-        onTap: downloading ? null : () => controller.downloadDocument(document),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            children: [
-              Icon(
+      final meta = [
+        if (size.isNotEmpty) size,
+        if (document.uploadedAt != null)
+          DateConverter.dateToStringAR(document.uploadedAt),
+      ].join(" • ");
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
                 (document.mimeType ?? "").startsWith("image/")
                     ? Icons.image_outlined
                     : Icons.description_outlined,
-                size: 18,
-                color: ColorManager.colorGrey6,
+                size: 20,
+                color: ColorManager.colorPrimary,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label != null) ...[
                     Text(
+                      label!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: ColorManager.colorGrey6,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text(
                       document.originalName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: FontSize.s13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                         color: ColorManager.colorFontPrimary,
                       ),
                     ),
-                    if (size.isNotEmpty || document.uploadedAt != null)
-                      Text(
-                        [
-                          if (size.isNotEmpty) size,
-                          if (document.uploadedAt != null)
-                            DateConverter.dateToStringAR(document.uploadedAt),
-                        ].join(" • "),
-                        style: TextStyle(
-                          fontSize: FontSize.s10_5,
-                          color: ColorManager.colorGrey6,
-                        ),
+                  ),
+                  if (meta.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      meta,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: ColorManager.colorGrey6,
                       ),
+                    ),
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 8),
-              if (downloading)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: AppLoader.dots(size: 14),
-                )
-              else
-                Icon(
-                  Icons.file_download_outlined,
-                  size: 20,
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              customBorder: const CircleBorder(),
+              onTap: downloading
+                  ? null
+                  : () => controller.downloadDocument(document),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
                   color: ColorManager.colorPrimary,
+                  shape: BoxShape.circle,
                 ),
-            ],
-          ),
+                child: downloading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 14,
+                          child: AppLoader.dots(size: 12, color: Colors.white),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.download_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+              ),
+            ),
+          ],
         ),
       );
     });
@@ -583,7 +715,7 @@ class _TimelineCard extends StatelessWidget {
         <({IconData icon, String label, DateTime? date, Color color})>[
           if (request.submittedAt != null)
             (
-              icon: Icons.send_outlined,
+              icon: Icons.send_rounded,
               label: "visa_details_step_submitted".tr,
               date: request.submittedAt,
               color: ColorManager.colorGrey6,
@@ -597,7 +729,7 @@ class _TimelineCard extends StatelessWidget {
             ),
           if (request.decidedAt != null)
             (
-              icon: Icons.gavel_outlined,
+              icon: Icons.gavel_rounded,
               label: "visa_details_step_decided".tr,
               date: request.decidedAt,
               color: ColorManager.colorOrange,
@@ -613,30 +745,30 @@ class _TimelineCard extends StatelessWidget {
 
     return _CardFrame(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionTitle(
-            icon: Icons.history_outlined,
+            icon: Icons.history_rounded,
             title: "visa_details_timeline_title".tr,
           ),
-          const SizedBox(height: AppPadding.p10),
+          const SizedBox(height: 10),
           for (var i = 0; i < steps.length; i++)
             IntrinsicHeight(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Column(
                     children: [
                       Container(
-                        width: 26,
-                        height: 26,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
-                          color: steps[i].color.withValues(alpha: 0.12),
+                          color: steps[i].color.withValues(alpha: 0.13),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           steps[i].icon,
-                          size: 14,
+                          size: 17,
                           color: steps[i].color,
                         ),
                       ),
@@ -644,7 +776,8 @@ class _TimelineCard extends StatelessWidget {
                         Expanded(
                           child: Container(
                             width: 1.5,
-                            color: ColorManager.colorDivider,
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            color: ColorManager.colorTextFieldEnabledBorder,
                           ),
                         ),
                     ],
@@ -653,27 +786,37 @@ class _TimelineCard extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        bottom: i == steps.length - 1 ? 0 : AppPadding.p12,
-                        top: 2,
+                        top: 4,
+                        bottom: i == steps.length - 1 ? 0 : 10,
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              steps[i].label,
-                              style: TextStyle(
-                                fontSize: FontSize.s13,
-                                fontWeight: FontWeight.w600,
-                                color: ColorManager.colorFontPrimary,
-                              ),
+                          Text(
+                            steps[i].label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: ColorManager.colorFontPrimary,
                             ),
                           ),
-                          Text(
-                            _dateTime(steps[i].date),
-                            style: TextStyle(
-                              fontSize: FontSize.s11,
-                              color: ColorManager.colorGrey6,
-                            ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: ColorManager.colorGrey6,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _dateTime(steps[i].date),
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: ColorManager.colorGrey6,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -713,7 +856,7 @@ class _AdminNoteCard extends StatelessWidget {
                     : "visa_details_admin_note_title".tr,
                 style: TextStyle(
                   fontSize: FontSize.s15,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),
@@ -862,7 +1005,7 @@ class _ActionsRow extends StatelessWidget {
                 "visa_details_withdraw_confirm_title".tr,
                 style: TextStyle(
                   fontSize: FontSize.s16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),

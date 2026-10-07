@@ -8,6 +8,7 @@ import 'package:safraa_passenger_app/presentation/pages/payment_requests_page/pa
 import 'package:safraa_passenger_app/presentation/pages/profile_page/profile_page.dart';
 import 'package:safraa_passenger_app/presentation/pages/trips_page/trips_page.dart';
 import 'package:safraa_passenger_app/presentation/pages/visas_page/visas_page.dart';
+import 'package:safraa_passenger_app/presentation/util/resources/assets.gen.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
@@ -79,14 +80,41 @@ class MainPage extends GetView<MainPageController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorManager.colorBackground,
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       appBar: _MainAppBar(controller: controller),
-      body: SafeArea(
-        top: false,
-        child: PageView(
-          physics: const NeverScrollableScrollPhysics(),
-          controller: controller.pageController,
-          onPageChanged: (index) => controller.pageIndex.value = index,
-          children: controller.tabs.map((tab) => _tabMeta[tab]!.page).toList(),
+      body: Builder(
+        builder: (context) => Stack(
+          children: [
+            // الخلفية تنتهي عند منتصف ارتفاع الـ bottom nav bar
+            Positioned.fill(
+              bottom: MediaQuery.paddingOf(context).bottom / 2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: const AssetImage(
+                      'assets/backgrounds/background_app.png',
+                    ),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      ColorManager.colorWhite.withValues(alpha: 0.75),
+                      BlendMode.srcOver,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: PageView(
+                physics: const NeverScrollableScrollPhysics(),
+                controller: controller.pageController,
+                onPageChanged: (index) => controller.pageIndex.value = index,
+                children: controller.tabs
+                    .map((tab) => _tabMeta[tab]!.page)
+                    .toList(),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _MainBottomNavBar(controller: controller),
@@ -116,7 +144,8 @@ class _MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: ColorManager.colorWhite,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
       elevation: 0,
       centerTitle: false,
@@ -140,9 +169,13 @@ class _MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
             Get.toNamed(AppRoutes.notificationsRoute);
           },
-          icon: Icon(
-            Icons.notifications_none_outlined,
-            color: ColorManager.colorFontPrimary,
+          icon: Assets.icons.notificationIcon.svg(
+            width: 26,
+            height: 26,
+            colorFilter: ColorFilter.mode(
+              ColorManager.colorFontPrimary,
+              BlendMode.srcIn,
+            ),
           ),
           tooltip: "main_tab_notifications".tr,
         ),
@@ -169,35 +202,100 @@ class _MainBottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: ColorManager.colorBlack.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
+            color: ColorManager.colorBlack.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p8,
-        vertical: AppPadding.p8,
+      padding: const EdgeInsets.fromLTRB(
+        AppPadding.p8,
+        0,
+        AppPadding.p8,
+        AppPadding.p8,
       ),
       child: SafeArea(
         top: false,
-        child: Obx(
-          () => Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: controller.tabs.asMap().entries.map((entry) {
-              final index = entry.key;
-              final tab = entry.value;
-              final meta = MainPage._tabMeta[tab]!;
-              final isActive = controller.pageIndex.value == index;
-              return _NavBarItem(
-                label: meta.label,
-                icon: isActive ? meta.activeIcon : meta.icon,
-                isActive: isActive,
-                onTap: () => controller.changePage(tab),
-              );
-            }).toList(),
-          ),
-        ),
+        child: Obx(() {
+          final count = controller.tabs.length;
+          final activeIndex = controller.pageIndex.value;
+          // x في AlignmentDirectional: -1 = بداية الصف، 1 = نهايته (يتبع RTL تلقائيًا).
+          final x = count <= 1 ? 0.0 : -1 + 2 * activeIndex / (count - 1);
+          return SizedBox(
+            height: 68,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  top: AppPadding.p8,
+                  child: Stack(
+                    children: [
+                      // شريط المؤشر: أعلى العنصر الحاوي للأيقونة، في منتصفه أفقيًا
+                      AnimatedAlign(
+                        alignment: AlignmentDirectional(x, -1),
+                        duration: const Duration(milliseconds: 380),
+                        curve: Curves.easeOutBack,
+                        child: FractionallySizedBox(
+                          widthFactor: 1 / count,
+                          heightFactor: 1,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Container(
+                              width: 30,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: ColorManager.colorPrimary,
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // الكبسولة المنزلقة خلف العنصر النشط
+                      AnimatedAlign(
+                        alignment: AlignmentDirectional(x, 0),
+                        duration: const Duration(milliseconds: 380),
+                        curve: Curves.easeOutBack,
+                        child: FractionallySizedBox(
+                          widthFactor: 1 / count,
+                          heightFactor: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: ColorManager.colorPrimary.withValues(
+                                  alpha: 0.10,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: controller.tabs.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final tab = entry.value;
+                          final meta = MainPage._tabMeta[tab]!;
+                          final isActive = activeIndex == index;
+                          return Expanded(
+                            child: _NavBarItem(
+                              label: meta.label,
+                              icon: isActive ? meta.activeIcon : meta.icon,
+                              isActive: isActive,
+                              onTap: () => controller.changePage(tab),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -223,25 +321,39 @@ class _NavBarItem extends StatelessWidget {
     final color = isActive
         ? ColorManager.colorPrimary
         : ColorManager.colorGrey6;
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppPadding.p12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.p12,
-          vertical: AppPadding.p8,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(color: color, fontSize: FontSize.s11),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // ارتداد (bounce) للأيقونة عند التفعيل
+          AnimatedScale(
+            scale: isActive ? 1.18 : 1.0,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutBack,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOutBack,
+              transitionBuilder: (child, animation) => ScaleTransition(
+                scale: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: Icon(icon, key: ValueKey(icon), color: color, size: 24),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 3),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            style: DefaultTextStyle.of(context).style.copyWith(
+              color: color,
+              fontSize: FontSize.s11,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ],
       ),
     );
   }

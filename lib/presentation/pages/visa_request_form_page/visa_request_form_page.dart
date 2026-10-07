@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_field_model.dart';
 import 'package:safraa_passenger_app/core/app_config/app_translation.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/custom_bottom_sheet.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
@@ -23,9 +24,9 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "visa_form_title".tr, backIcon: true),
-      body: SafeArea(child: Obx(() => _body())),
+      body: AppBackground(child: SafeArea(child: Obx(() => _body()))),
     );
   }
 
@@ -59,12 +60,20 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
             child: _CardShell(
               child: Row(
                 children: [
-                  Icon(
-                    Icons.payments_outlined,
-                    size: AppSize.s20,
-                    color: ColorManager.colorPrimary,
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.payments_outlined,
+                      size: 18,
+                      color: ColorManager.colorPrimary,
+                    ),
                   ),
-                  const SizedBox(width: AppPadding.p8),
+                  const SizedBox(width: 10),
                   Text(
                     "visa_form_price_label".tr,
                     style: TextStyle(
@@ -78,7 +87,7 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
                       Money.format(controller.expectedPrice.value),
                       style: TextStyle(
                         fontSize: FontSize.s16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: ColorManager.colorPrimary,
                       ),
                     ),
@@ -87,7 +96,7 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
               ),
             ),
           ),
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
         ],
         FadeSlideIn(
           delay: const Duration(milliseconds: 70),
@@ -97,17 +106,25 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.assignment_outlined,
+                        size: 18,
+                        color: ColorManager.colorPrimary,
+                      ),
                     ),
-                    const SizedBox(width: AppPadding.p8),
+                    const SizedBox(width: 10),
                     Text(
                       "visa_form_details_title".tr,
                       style: TextStyle(
                         fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: ColorManager.colorFontPrimary,
                       ),
                     ),
@@ -123,7 +140,7 @@ class VisaRequestFormPage extends GetView<VisaRequestFormPageController> {
             ),
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         FadeSlideIn(
           delay: const Duration(milliseconds: 140),
           child: Obx(
@@ -151,7 +168,7 @@ class _CardShell extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -160,7 +177,7 @@ class _CardShell extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -186,7 +203,7 @@ InputDecoration _fieldDecoration({
   return InputDecoration(
     isDense: true,
     filled: true,
-    fillColor: ColorManager.colorBackground,
+    fillColor: ColorManager.colorWhite,
     prefixIcon: prefixIcon,
     suffixIcon: suffixIcon,
     contentPadding: const EdgeInsets.symmetric(
@@ -194,14 +211,16 @@ InputDecoration _fieldDecoration({
       vertical: 12,
     ),
     enabledBorder: border(
-      hasError ? ColorManager.colorError300 : Colors.transparent,
+      hasError
+          ? ColorManager.colorError300
+          : ColorManager.colorTextFieldEnabledBorder,
     ),
     focusedBorder: border(
       hasError ? ColorManager.colorError300 : ColorManager.colorPrimary,
     ),
     errorBorder: border(ColorManager.colorError300),
     focusedErrorBorder: border(ColorManager.colorError300),
-    border: border(Colors.transparent),
+    border: border(ColorManager.colorTextFieldEnabledBorder),
   );
 }
 
@@ -235,9 +254,9 @@ class _FieldWidget extends StatelessWidget {
                 child: Text(
                   field.displayLabel,
                   style: TextStyle(
-                    fontSize: FontSize.s12,
-                    fontWeight: FontWeight.w600,
-                    color: ColorManager.colorGrey6,
+                    fontSize: FontSize.s13,
+                    fontWeight: FontWeight.w500,
+                    color: ColorManager.colorDoveGray600,
                   ),
                 ),
               ),
@@ -246,7 +265,7 @@ class _FieldWidget extends StatelessWidget {
                   " *",
                   style: TextStyle(
                     fontSize: FontSize.s12,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorError300,
                   ),
                 ),
@@ -297,6 +316,8 @@ class _FilePickerTile extends StatelessWidget {
     return Obx(() {
       final file = fileRx?.value;
       final picked = file != null;
+      final existing = controller.existingDocuments[field.fieldId];
+      final hasExisting = !picked && existing != null;
       return InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () async {
@@ -313,19 +334,23 @@ class _FilePickerTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: picked
                 ? ColorManager.colorPrimary.withValues(alpha: 0.08)
-                : ColorManager.colorBackground,
+                : ColorManager.colorWhite,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: hasError
                   ? ColorManager.colorError300
-                  : (picked ? ColorManager.colorPrimary : Colors.transparent),
+                  : (picked
+                        ? ColorManager.colorPrimary
+                        : ColorManager.colorTextFieldEnabledBorder),
             ),
           ),
           child: Row(
             children: [
               Icon(
-                picked ? Icons.check_circle_rounded : Icons.upload_file_rounded,
-                color: picked
+                picked || hasExisting
+                    ? Icons.check_circle_rounded
+                    : Icons.upload_file_rounded,
+                color: picked || hasExisting
                     ? ColorManager.colorPrimary
                     : ColorManager.colorGrey6,
                 size: 18,
@@ -335,13 +360,15 @@ class _FilePickerTile extends StatelessWidget {
                 child: Text(
                   picked
                       ? file.path.split(RegExp(r'[\\/]')).last
+                      : hasExisting
+                      ? existing.originalName
                       : "visa_form_choose_file".tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: FontSize.s13,
-                    fontWeight: picked ? FontWeight.w600 : FontWeight.normal,
-                    color: picked
+                    fontWeight: picked ? FontWeight.w500 : FontWeight.normal,
+                    color: picked || hasExisting
                         ? ColorManager.colorPrimary
                         : ColorManager.colorGrey6,
                   ),
@@ -407,12 +434,12 @@ class _SelectField extends StatelessWidget {
               vertical: 12,
             ),
             decoration: BoxDecoration(
-              color: ColorManager.colorBackground,
+              color: ColorManager.colorWhite,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: hasError
                     ? ColorManager.colorError300
-                    : Colors.transparent,
+                    : ColorManager.colorTextFieldEnabledBorder,
               ),
             ),
             child: Row(
@@ -478,12 +505,12 @@ class _OptionsList extends StatelessWidget {
             decoration: BoxDecoration(
               color: isSelected
                   ? ColorManager.colorPrimary.withValues(alpha: 0.08)
-                  : ColorManager.colorBackground,
+                  : ColorManager.colorWhite,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSelected
                     ? ColorManager.colorPrimary
-                    : Colors.transparent,
+                    : ColorManager.colorTextFieldEnabledBorder,
               ),
             ),
             child: Row(
@@ -493,8 +520,8 @@ class _OptionsList extends StatelessWidget {
                     option.label,
                     style: _fieldTextStyle().copyWith(
                       fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w600,
+                          ? FontWeight.w500
+                          : FontWeight.w500,
                       color: isSelected
                           ? ColorManager.colorPrimary
                           : ColorManager.colorFontPrimary,

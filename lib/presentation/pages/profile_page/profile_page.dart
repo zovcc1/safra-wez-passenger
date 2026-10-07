@@ -4,6 +4,7 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/user_avatar_widget.dart';
 import 'package:safraa_passenger_app/presentation/pages/profile_page/profile_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
@@ -17,7 +18,7 @@ class ProfilePage extends GetView<ProfilePageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: controller.retry,
@@ -59,49 +60,26 @@ class ProfilePage extends GetView<ProfilePageController> {
       padding: const EdgeInsets.all(AppPadding.p16),
       children: [
         FadeSlideIn(
-          child: _UserHeader(
-            name: user.fullName,
-            phone: user.phoneNumber,
-            photoUrl: user.photoUrl,
-            isPhoneVerified: user.isPhoneVerified,
+          child: _CardContainer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _UserHeader(
+                  name: user.fullName,
+                  phone: user.phoneNumber,
+                  photoUrl: user.photoUrl,
+                  isPhoneVerified: user.isPhoneVerified,
+                ),
+                const SizedBox(height: AppPadding.p12),
+                _AccountInfoBox(
+                  nationalId: user.nationalId,
+                  joinDate: DateConverter.dateToStringAR(user.createdAt),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
-        FadeSlideIn(
-          delay: const Duration(milliseconds: 70),
-          child: _SectionCard(
-            icon: Icons.badge_outlined,
-            title: "profile_section_account".tr,
-            children: [
-              _AccountInfoGrid(
-                tiles: [
-                  _AccountInfoTile(
-                    icon: Icons.person_outline,
-                    label: "profile_label_name".tr,
-                    value: user.fullName,
-                  ),
-                  _AccountInfoTile(
-                    icon: Icons.phone_outlined,
-                    label: "profile_label_phone".tr,
-                    value: user.phoneNumber,
-                  ),
-                  if (user.nationalId != null)
-                    _AccountInfoTile(
-                      icon: Icons.credit_card_outlined,
-                      label: "profile_label_national_id".tr,
-                      value: user.nationalId!,
-                    ),
-                  _AccountInfoTile(
-                    icon: Icons.calendar_today_outlined,
-                    label: "profile_label_join_date".tr,
-                    value: DateConverter.dateToStringAR(user.createdAt),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         FadeSlideIn(
           delay: const Duration(milliseconds: 140),
           child: _SectionCard(
@@ -111,11 +89,18 @@ class ProfilePage extends GetView<ProfilePageController> {
               Obx(
                 () => _SettingsRow(
                   icon: Icons.dark_mode_outlined,
-                  label: "profile_dark_mode".tr,
-                  trailing: Switch(
-                    value: controller.isDarkMode,
-                    activeThumbColor: ColorManager.colorPrimary,
-                    onChanged: (_) => controller.toggleDarkMode(),
+                  label: "profile_appearance".tr,
+                  trailing: _SegmentedToggle(
+                    options: [
+                      ("light", "profile_theme_light".tr),
+                      ("dark", "profile_theme_dark".tr),
+                    ],
+                    selectedIndex: controller.isDarkMode ? 1 : 0,
+                    onChanged: (mode) {
+                      if ((mode == "dark") != controller.isDarkMode) {
+                        controller.toggleDarkMode();
+                      }
+                    },
                   ),
                 ),
               ),
@@ -127,7 +112,7 @@ class ProfilePage extends GetView<ProfilePageController> {
             ],
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         FadeSlideIn(
           delay: const Duration(milliseconds: 210),
           child: _SectionCard(
@@ -158,7 +143,7 @@ class ProfilePage extends GetView<ProfilePageController> {
             ],
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         FadeSlideIn(
           delay: const Duration(milliseconds: 280),
           child: _SectionCard(
@@ -223,7 +208,7 @@ class ProfilePage extends GetView<ProfilePageController> {
                 title,
                 style: TextStyle(
                   fontSize: FontSize.s16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),
@@ -286,9 +271,87 @@ class _UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = isPhoneVerified
+        ? ColorManager.colorGreen3
+        : ColorManager.colorOrange;
+    return Row(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: ColorManager.colorPrimary.withValues(alpha: 0.25),
+                  width: 2,
+                ),
+              ),
+              child: UserAvatarWidget(image: photoUrl, radius: 28),
+            ),
+            PositionedDirectional(
+              bottom: -2,
+              end: -2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: ColorManager.colorWhite,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPhoneVerified ? Icons.verified : Icons.error_outline,
+                  size: 18,
+                  color: statusColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: AppPadding.p12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: FontSize.s15,
+                  fontWeight: FontWeight.w500,
+                  color: ColorManager.colorFontPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                phone,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: FontSize.s12,
+                  fontWeight: FontWeight.w400,
+                  color: ColorManager.colorGrey6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardContainer extends StatelessWidget {
+  const _CardContainer({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -297,92 +360,12 @@ class _UserHeader extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ColorManager.colorPrimary.withValues(alpha: 0.25),
-                width: 2,
-              ),
-            ),
-            child: UserAvatarWidget(image: photoUrl, radius: 24),
-          ),
-          const SizedBox(width: AppPadding.p12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s16,
-                    fontWeight: FontWeight.bold,
-                    color: ColorManager.colorFontPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  phone,
-                  style: TextStyle(
-                    fontSize: FontSize.s12,
-                    color: ColorManager.colorGrey6,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        (isPhoneVerified
-                                ? ColorManager.colorGreen3
-                                : ColorManager.colorOrange)
-                            .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPhoneVerified ? Icons.verified : Icons.error_outline,
-                        size: 12,
-                        color: isPhoneVerified
-                            ? ColorManager.colorGreen3
-                            : ColorManager.colorOrange,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isPhoneVerified
-                            ? "profile_verified".tr
-                            : "profile_unverified".tr,
-                        style: TextStyle(
-                          fontSize: FontSize.s10_5,
-                          fontWeight: FontWeight.bold,
-                          color: isPhoneVerified
-                              ? ColorManager.colorGreen3
-                              : ColorManager.colorOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: child,
     );
   }
 }
@@ -402,9 +385,10 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = iconColor ?? ColorManager.colorPrimary;
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -413,7 +397,7 @@ class _SectionCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -423,17 +407,21 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: AppSize.s20,
-                color: iconColor ?? ColorManager.colorPrimary,
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: color),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 title,
                 style: TextStyle(
                   fontSize: FontSize.s15,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),
@@ -447,78 +435,90 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _AccountInfoTile {
-  const _AccountInfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+class _AccountInfoBox extends StatelessWidget {
+  const _AccountInfoBox({required this.nationalId, required this.joinDate});
 
-  final IconData icon;
-  final String label;
-  final String value;
-}
-
-class _AccountInfoGrid extends StatelessWidget {
-  const _AccountInfoGrid({required this.tiles});
-
-  final List<_AccountInfoTile> tiles;
+  final String? nationalId;
+  final String joinDate;
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: tiles.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppPadding.p8,
-        crossAxisSpacing: AppPadding.p8,
-        mainAxisExtent: 48,
+    final joinItem = TripInfoItem(
+      icon: Icons.calendar_today_outlined,
+      weight: FontWeight.w400,
+      title: joinDate,
+      subtitle: "profile_label_join_date".tr,
+    );
+    if (nationalId == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: ColorManager.colorBackground.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: joinItem,
+      );
+    }
+    return TripInfoBox(
+      start: TripInfoItem(
+        icon: Icons.credit_card_outlined,
+        weight: FontWeight.w400,
+        title: nationalId!,
+        subtitle: "profile_label_national_id".tr,
       ),
-      itemBuilder: (context, index) => _AccountInfoTileView(tile: tiles[index]),
+      end: joinItem,
     );
   }
 }
 
-class _AccountInfoTileView extends StatelessWidget {
-  const _AccountInfoTileView({required this.tile});
-
-  final _AccountInfoTile tile;
+/// فاصل غير مكتمل: يبدأ من نهاية الصف (الجهة اليسرى في RTL) ويغطي جزءاً منه.
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p8,
-        vertical: AppPadding.p4,
-      ),
-      decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(AppSize.s10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            tile.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: FontSize.s10,
-              color: ColorManager.colorGrey6,
-            ),
+    return Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: FractionallySizedBox(
+        widthFactor: 1.0,
+        child: Divider(
+          height: 1,
+          color: ColorManager.colorTextFieldEnabledBorder.withValues(
+            alpha: 0.4,
           ),
-          const SizedBox(height: 2),
-          Text(
-            tile.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: FontSize.s11,
-              fontWeight: FontWeight.bold,
-              color: ColorManager.colorFontPrimary,
+        ),
+      ),
+    );
+  }
+}
+
+/// أيقونة صف مع خط قصير (غير مكتمل) يتمدد تحتها بحركة ناعمة عند الظهور.
+class _AnimatedRowIcon extends StatelessWidget {
+  const _AnimatedRowIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Transform.scale(
+            scale: 0.7 + 0.3 * value,
+            child: Icon(icon, size: AppSize.s20, color: color),
+          ),
+          const SizedBox(height: 3),
+          Container(
+            width: 12 * value,
+            height: 2,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ],
@@ -546,13 +546,14 @@ class _SettingsRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppPadding.p8),
           child: Row(
             children: [
-              Icon(icon, size: AppSize.s20, color: ColorManager.colorGrey6),
+              _AnimatedRowIcon(icon: icon, color: ColorManager.colorGrey6),
               const SizedBox(width: AppPadding.p12),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
                     fontSize: FontSize.s13,
+                    fontWeight: FontWeight.w400,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
@@ -561,7 +562,7 @@ class _SettingsRow extends StatelessWidget {
             ],
           ),
         ),
-        Divider(height: 1, color: ColorManager.colorTextFieldEnabledBorder),
+        const _RowDivider(),
       ],
     );
   }
@@ -586,9 +587,8 @@ class _LanguageRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppPadding.p8),
           child: Row(
             children: [
-              Icon(
-                Icons.language_outlined,
-                size: AppSize.s20,
+              _AnimatedRowIcon(
+                icon: Icons.language_outlined,
                 color: ColorManager.colorGrey6,
               ),
               const SizedBox(width: AppPadding.p12),
@@ -597,34 +597,41 @@ class _LanguageRow extends StatelessWidget {
                   "profile_language".tr,
                   style: TextStyle(
                     fontSize: FontSize.s13,
+                    fontWeight: FontWeight.w400,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
               ),
-              _LangToggle(isArabic: isArabic, onChanged: onChanged),
+              _SegmentedToggle(
+                options: [
+                  ("ar", "profile_lang_arabic".tr),
+                  ("en", "profile_lang_english".tr),
+                ],
+                selectedIndex: isArabic ? 0 : 1,
+                onChanged: onChanged,
+              ),
             ],
           ),
         ),
-        if (!isLast)
-          Divider(height: 1, color: ColorManager.colorTextFieldEnabledBorder),
+        if (!isLast) const _RowDivider(),
       ],
     );
   }
 }
 
-class _LangToggle extends StatelessWidget {
-  const _LangToggle({required this.isArabic, required this.onChanged});
+class _SegmentedToggle extends StatelessWidget {
+  const _SegmentedToggle({
+    required this.options,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
 
-  final bool isArabic;
+  final List<(String, String)> options;
+  final int selectedIndex;
   final void Function(String) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      ("ar", "profile_lang_arabic".tr),
-      ("en", "profile_lang_english".tr),
-    ];
-    final selectedIndex = isArabic ? 0 : 1;
     return Container(
       width: 150,
       height: 34,
@@ -670,8 +677,8 @@ class _LangToggle extends StatelessWidget {
                         style: DefaultTextStyle.of(context).style.copyWith(
                           fontSize: FontSize.s12,
                           fontWeight: i == selectedIndex
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                              ? FontWeight.w500
+                              : FontWeight.w400,
                           color: i == selectedIndex
                               ? ColorManager.colorPrimary
                               : ColorManager.colorGrey6,
@@ -718,9 +725,8 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 9),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: AppSize.s20,
+                _AnimatedRowIcon(
+                  icon: icon,
                   color: destructive
                       ? ColorManager.colorError300
                       : ColorManager.colorGrey6,
@@ -729,7 +735,11 @@ class _ActionRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(fontSize: FontSize.s13, color: color),
+                    style: TextStyle(
+                      fontSize: FontSize.s13,
+                      fontWeight: FontWeight.w400,
+                      color: color,
+                    ),
                   ),
                 ),
                 Icon(
@@ -741,8 +751,7 @@ class _ActionRow extends StatelessWidget {
             ),
           ),
         ),
-        if (!isLast)
-          Divider(height: 1, color: ColorManager.colorTextFieldEnabledBorder),
+        if (!isLast) const _RowDivider(),
       ],
     );
   }

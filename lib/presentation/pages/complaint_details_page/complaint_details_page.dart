@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/complaint_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/complaint_status_chip.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
@@ -22,12 +23,12 @@ class ComplaintDetailsPage extends GetView<ComplaintDetailsPageController> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: ColorManager.colorBackground,
+        backgroundColor: Colors.transparent,
         appBar: NormalAppBar(
           title: "complaint_details_title".tr,
           backIcon: true,
         ),
-        body: SafeArea(child: Obx(() => _body())),
+        body: AppBackground(child: SafeArea(child: Obx(() => _body()))),
       ),
     );
   }
@@ -90,23 +91,23 @@ class ComplaintDetailsPage extends GetView<ComplaintDetailsPageController> {
                   ),
                 ),
                 if (complaint.isAwaitingPassenger) ...[
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   const FadeSlideIn(child: _AwaitingBanner()),
                 ],
                 if (complaint.statusType != ComplaintStatus.unknown) ...[
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 60),
                     child: _ProgressCard(status: complaint.status),
                   ),
                 ],
-                const SizedBox(height: AppPadding.p12),
+                const SizedBox(height: AppPadding.p8),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 120),
                   child: _DescriptionCard(text: complaint.description),
                 ),
                 if (showResolution) ...[
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 180),
                     child: _ResolutionCard(
@@ -116,32 +117,18 @@ class ComplaintDetailsPage extends GetView<ComplaintDetailsPageController> {
                   ),
                 ],
                 if (showRejection) ...[
-                  const SizedBox(height: AppPadding.p12),
+                  const SizedBox(height: AppPadding.p8),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 180),
                     child: _RejectionCard(reason: complaint.rejectionReason!),
                   ),
                 ],
-                const SizedBox(height: AppPadding.p20),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.forum_outlined,
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "complaint_replies_title".tr,
-                      style: TextStyle(
-                        fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.colorFontPrimary,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: AppPadding.p16),
+                _CardTitle(
+                  icon: Icons.forum_outlined,
+                  text: "complaint_replies_title".tr,
                 ),
-                const SizedBox(height: AppPadding.p12),
+                const SizedBox(height: AppPadding.p8),
                 if (replies.isEmpty)
                   const _EmptyReplies()
                 else
@@ -179,7 +166,7 @@ BoxDecoration _cardDecoration() => BoxDecoration(
   boxShadow: [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.05),
-      blurRadius: 10,
+      blurRadius: 16,
       offset: const Offset(0, 4),
     ),
   ],
@@ -197,76 +184,35 @@ class _HeaderCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: status.color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  complaintCategoryIcon(complaint.category),
-                  size: 20,
-                  color: status.color,
-                ),
-              ),
-              const SizedBox(width: AppPadding.p12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      categoryLabel,
-                      style: TextStyle(
-                        fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.colorFontPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "#${complaint.complaintId}",
-                      style: TextStyle(
-                        fontSize: FontSize.s13,
-                        fontWeight: FontWeight.w600,
-                        color: ColorManager.colorGrey6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppPadding.p8),
-              ComplaintStatusChip(status: complaint.status),
-            ],
+          TripCardHeader(
+            icon: complaintCategoryIcon(complaint.category),
+            title: categoryLabel,
+            badge: status.label,
+            badgeColor: status.color,
           ),
-          const SizedBox(height: AppPadding.p12),
-          Wrap(
-            spacing: AppPadding.p12,
-            runSpacing: AppPadding.p8,
-            children: [
-              _MetaItem(
-                icon: Icons.calendar_today_outlined,
-                text:
-                    "${DateConverter.dateToStringAR(complaint.createdAt)} "
-                    "${DateConverter.timeUTCToString(complaint.createdAt)}",
-              ),
-              if (complaint.bookingId != null)
-                _MetaItem(
-                  icon: Icons.confirmation_number_outlined,
-                  text: "file_complaint_linked_booking".trParams({
-                    "id": "${complaint.bookingId}",
-                  }),
-                ),
-            ],
+          const SizedBox(height: 8),
+          TripInfoBox(
+            start: TripInfoItem(
+              icon: Icons.calendar_today_outlined,
+              title: DateConverter.dateToStringAR(complaint.createdAt),
+              subtitle: DateConverter.timeUTCToString(complaint.createdAt),
+            ),
+            end: TripInfoItem(
+              icon: Icons.tag,
+              title: "#${complaint.complaintId}",
+              subtitle: complaint.bookingId == null
+                  ? null
+                  : "file_complaint_linked_booking".trParams({
+                      "id": "${complaint.bookingId}",
+                    }),
+            ),
           ),
         ],
       ),
@@ -274,24 +220,37 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-class _MetaItem extends StatelessWidget {
-  const _MetaItem({required this.icon, required this.text});
+/// عنوان قسم داخل كارد: أيقونة في مربع ملوّن + نص خفيف.
+class _CardTitle extends StatelessWidget {
+  const _CardTitle({required this.icon, required this.text, this.color});
 
   final IconData icon;
   final String text;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final c = color ?? ColorManager.colorPrimary;
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: ColorManager.colorGrey6),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: FontSize.s12,
-            color: ColorManager.colorGrey6,
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: c),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: FontSize.s15,
+              fontWeight: FontWeight.w500,
+              color: color ?? ColorManager.colorFontPrimary,
+            ),
           ),
         ),
       ],
@@ -320,26 +279,27 @@ class _ProgressCard extends StatelessWidget {
       _ => 2,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p16,
-        vertical: AppPadding.p16,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: _cardDecoration(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < steps.length; i++) ...[
-            _StepDot(step: steps[i], reached: i <= current),
+            _StepDot(
+              step: steps[i],
+              reached: i <= current,
+              isCurrent: i == current,
+            ),
             if (i < steps.length - 1)
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 13),
+                  padding: const EdgeInsets.only(top: 10),
                   child: Container(
-                    height: 3,
+                    height: 2,
                     decoration: BoxDecoration(
                       color: i < current
-                          ? ColorManager.colorPrimary
-                          : ColorManager.colorDivider,
+                          ? ColorManager.colorPrimary.withValues(alpha: 0.35)
+                          : ColorManager.colorDivider.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -353,10 +313,15 @@ class _ProgressCard extends StatelessWidget {
 }
 
 class _StepDot extends StatelessWidget {
-  const _StepDot({required this.step, required this.reached});
+  const _StepDot({
+    required this.step,
+    required this.reached,
+    required this.isCurrent,
+  });
 
   final String step;
   final bool reached;
+  final bool isCurrent;
 
   @override
   Widget build(BuildContext context) {
@@ -367,34 +332,37 @@ class _StepDot extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 22,
+            height: 22,
             decoration: BoxDecoration(
-              color: reached ? color : ColorManager.colorWhite,
+              color: reached
+                  ? color.withValues(alpha: isCurrent ? 0.18 : 0.1)
+                  : Colors.transparent,
               shape: BoxShape.circle,
-              border: Border.all(color: color, width: 2),
+              border: Border.all(
+                color: color.withValues(alpha: reached ? 0.6 : 0.35),
+                width: 1.2,
+              ),
             ),
             child: reached
                 ? Icon(
                     step == "rejected"
                         ? Icons.close_rounded
                         : Icons.check_rounded,
-                    size: 16,
-                    color: Colors.white,
+                    size: 13,
+                    color: color,
                   )
                 : null,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Text(
             display.label,
             textAlign: TextAlign.center,
             maxLines: 2,
             style: TextStyle(
-              fontSize: FontSize.s11,
-              fontWeight: reached ? FontWeight.bold : FontWeight.normal,
-              color: reached
-                  ? ColorManager.colorFontPrimary
-                  : ColorManager.colorGrey6,
+              fontSize: FontSize.s10_5,
+              fontWeight: isCurrent ? FontWeight.w500 : FontWeight.w400,
+              color: isCurrent ? color : ColorManager.colorGrey6,
             ),
           ),
         ],
@@ -413,38 +381,24 @@ class _DescriptionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.notes_rounded,
-                size: AppSize.s20,
-                color: ColorManager.colorPrimary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "file_complaint_description".tr,
-                style: TextStyle(
-                  fontSize: FontSize.s15,
-                  fontWeight: FontWeight.bold,
-                  color: ColorManager.colorFontPrimary,
-                ),
-              ),
-            ],
+          _CardTitle(
+            icon: Icons.notes_rounded,
+            text: "file_complaint_description".tr,
           ),
           const SizedBox(height: AppPadding.p8),
           Text(
             text,
             style: TextStyle(
-              fontSize: FontSize.s13,
-              height: 1.5,
-              color: ColorManager.colorFontPrimary,
+              fontSize: FontSize.s12,
+              height: 1.6,
+              color: ColorManager.colorDoveGray600,
             ),
           ),
         ],
@@ -465,7 +419,7 @@ class _ResolutionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -478,16 +432,11 @@ class _ResolutionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.verified_outlined, size: 20, color: green),
-              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  "complaint_resolution_title".tr,
-                  style: TextStyle(
-                    fontSize: FontSize.s15,
-                    fontWeight: FontWeight.bold,
-                    color: green,
-                  ),
+                child: _CardTitle(
+                  icon: Icons.verified_outlined,
+                  text: "complaint_resolution_title".tr,
+                  color: green,
                 ),
               ),
               if (resolvedAt != null)
@@ -504,9 +453,9 @@ class _ResolutionCard extends StatelessWidget {
           Text(
             resolution,
             style: TextStyle(
-              fontSize: FontSize.s13,
-              height: 1.5,
-              color: ColorManager.colorFontPrimary,
+              fontSize: FontSize.s12,
+              height: 1.6,
+              color: ColorManager.colorDoveGray600,
             ),
           ),
         ],
@@ -524,7 +473,7 @@ class _AwaitingBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -544,7 +493,7 @@ class _AwaitingBanner extends StatelessWidget {
                   "complaint_awaiting_title".tr,
                   style: TextStyle(
                     fontSize: FontSize.s14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: orange,
                   ),
                 ),
@@ -576,7 +525,7 @@ class _RejectionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -587,27 +536,18 @@ class _RejectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline_rounded, size: 20, color: red),
-              const SizedBox(width: 8),
-              Text(
-                "complaint_rejection_title".tr,
-                style: TextStyle(
-                  fontSize: FontSize.s15,
-                  fontWeight: FontWeight.bold,
-                  color: red,
-                ),
-              ),
-            ],
+          _CardTitle(
+            icon: Icons.info_outline_rounded,
+            text: "complaint_rejection_title".tr,
+            color: red,
           ),
           const SizedBox(height: AppPadding.p8),
           Text(
             reason,
             style: TextStyle(
-              fontSize: FontSize.s13,
-              height: 1.5,
-              color: ColorManager.colorFontPrimary,
+              fontSize: FontSize.s12,
+              height: 1.6,
+              color: ColorManager.colorDoveGray600,
             ),
           ),
         ],
@@ -663,7 +603,7 @@ class _ReplyBubble extends StatelessWidget {
         maxWidth: MediaQuery.of(context).size.width * 0.72,
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -700,7 +640,7 @@ class _ReplyBubble extends StatelessWidget {
                 : "complaint_author_support".tr,
             style: TextStyle(
               fontSize: FontSize.s11,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: mine
                   ? ColorManager.colorPrimary
                   : ColorManager.colorFontPrimary,
@@ -721,6 +661,7 @@ class _ReplyBubble extends StatelessWidget {
             "${DateConverter.timeUTCToString(reply.createdAt)}",
             style: TextStyle(
               fontSize: FontSize.s10,
+              fontWeight: FontWeight.w400,
               color: ColorManager.colorGrey6,
             ),
           ),
@@ -769,7 +710,7 @@ class _ReplyInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -822,7 +763,7 @@ class _ReplyInput extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: "complaint_reply_hint".tr,
                     filled: true,
-                    fillColor: ColorManager.colorBackground,
+                    fillColor: ColorManager.colorWhite,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppPadding.p16,
@@ -830,7 +771,15 @@ class _ReplyInput extends StatelessWidget {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(
+                        color: ColorManager.colorTextFieldEnabledBorder,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(
+                        color: ColorManager.colorTextFieldEnabledBorder,
+                      ),
                     ),
                   ),
                 ),

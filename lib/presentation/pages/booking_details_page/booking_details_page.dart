@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/booking_model.dart';
@@ -22,12 +24,14 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "booking_details_title".tr, backIcon: true),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.retry,
-          child: Obx(() => _body()),
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.retry,
+            child: Obx(() => _body()),
+          ),
         ),
       ),
     );
@@ -78,10 +82,10 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
       padding: const EdgeInsets.all(AppPadding.p16),
       children: [
         staggered(_StatusHeader(booking: booking)),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         staggered(_RouteCard(booking: booking)),
         if (booking.pickup != null) ...[
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
           staggered(
             _PickupCard(
               pickup: booking.pickup!,
@@ -93,21 +97,21 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
             ),
           ),
         ],
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         staggered(_BookingInfoCard(booking: booking)),
         if (_hasTimeline(booking)) ...[
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
           staggered(_TimelineCard(booking: booking)),
         ],
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         staggered(_PriceSummaryCard(booking: booking)),
         if (booking.canRate || booking.rating != null) ...[
-          const SizedBox(height: AppPadding.p12),
+          const SizedBox(height: AppPadding.p8),
           staggered(
             _RatingCard(booking: booking, onRate: controller.openRating),
           ),
         ],
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         staggered(
           AppButton(
             text: "booking_details_file_complaint".tr,
@@ -162,7 +166,7 @@ class _CardFrame extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -171,7 +175,7 @@ class _CardFrame extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -190,67 +194,24 @@ class _StatusHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = BookingStatusDisplay.of(booking.status);
     return _CardFrame(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: status.color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.event_seat_outlined,
-              color: status.color,
-              size: 20,
-            ),
+          TripCardHeader(
+            icon: Icons.event_seat_outlined,
+            title:
+                "${"booking_details_booking_number".tr} #${booking.bookingId}",
+            badge: status.label,
+            badgeColor: status.color,
           ),
-          const SizedBox(width: AppPadding.p12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  status.label,
-                  style: TextStyle(
-                    fontSize: FontSize.s15,
-                    fontWeight: FontWeight.bold,
-                    color: status.color,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "#${booking.bookingId}",
-                  style: TextStyle(
-                    fontSize: FontSize.s13,
-                    fontWeight: FontWeight.w600,
-                    color: ColorManager.colorGrey6,
-                  ),
-                ),
-                if (booking.transferredByHandoff) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ColorManager.colorOrange.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "booking_details_transferred_by_handoff".tr,
-                      style: TextStyle(
-                        fontSize: FontSize.s11,
-                        fontWeight: FontWeight.w600,
-                        color: ColorManager.colorOrange,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+          if (booking.transferredByHandoff) ...[
+            const SizedBox(height: 8),
+            TripCardChip(
+              icon: Icons.swap_horiz_rounded,
+              color: ColorManager.colorOrange,
+              label: "booking_details_transferred_by_handoff".tr,
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -295,7 +256,7 @@ class _RouteCard extends StatelessWidget {
                       : "booking_details_trip_type_scheduled".tr,
                   style: TextStyle(
                     fontSize: FontSize.s10_5,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: isOpenTrip
                         ? ColorManager.colorOrange
                         : ColorManager.colorPrimary,
@@ -315,7 +276,7 @@ class _RouteCard extends StatelessWidget {
               route?.displayName ?? "",
               style: TextStyle(
                 fontSize: FontSize.s14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: ColorManager.colorFontPrimary,
               ),
             ),
@@ -348,7 +309,7 @@ class _RouteCard extends StatelessWidget {
                     : _dateTime(journey?.departureTime),
                 style: TextStyle(
                   fontSize: FontSize.s13,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),
@@ -437,7 +398,7 @@ class _RoutePointLabel extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: FontSize.s14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorFontPrimary,
             ),
           ),
@@ -606,7 +567,7 @@ class _TimelineRow extends StatelessWidget {
                     step.label,
                     style: TextStyle(
                       fontSize: FontSize.s13,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: ColorManager.colorFontPrimary,
                     ),
                   ),
@@ -648,7 +609,7 @@ class _PriceSummaryCard extends StatelessWidget {
             "booking_details_total_amount".tr,
             style: TextStyle(
               fontSize: FontSize.s14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorFontPrimary,
             ),
           ),
@@ -657,7 +618,7 @@ class _PriceSummaryCard extends StatelessWidget {
             Money.format(booking.totalAmount),
             style: TextStyle(
               fontSize: FontSize.s16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorPrimary,
             ),
           ),
@@ -755,13 +716,21 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: AppSize.s20, color: ColorManager.colorPrimary),
-        const SizedBox(width: 8),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: ColorManager.colorPrimary),
+        ),
+        const SizedBox(width: 10),
         Text(
           title,
           style: TextStyle(
             fontSize: FontSize.s15,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: ColorManager.colorFontPrimary,
           ),
         ),
@@ -812,8 +781,8 @@ class _InfoTileView extends StatelessWidget {
         vertical: AppPadding.p4,
       ),
       decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(AppSize.s10),
+        color: ColorManager.colorBackground.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -835,7 +804,7 @@ class _InfoTileView extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: FontSize.s11,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorFontPrimary,
             ),
           ),
@@ -881,7 +850,7 @@ class _PickupCard extends StatelessWidget {
                 : "booking_details_pickup_no_address".tr,
             style: TextStyle(
               fontSize: FontSize.s14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: ColorManager.colorFontPrimary,
             ),
           ),

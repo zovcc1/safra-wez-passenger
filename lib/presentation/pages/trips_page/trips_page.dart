@@ -12,7 +12,7 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/custom_search_t
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/pages/trips_page/trips_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
@@ -27,7 +27,7 @@ class TripsPage extends GetView<TripsPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: controller.reload,
@@ -67,16 +67,43 @@ class TripsPage extends GetView<TripsPageController> {
           ? const SizedBox.shrink(key: ValueKey('header-empty'))
           : Padding(
               key: const ValueKey('header-count'),
-              padding: const EdgeInsets.only(bottom: AppPadding.p8),
-              child: Text(
-                "trips_results_count".trParams({
-                  "count": "${controller.results.length}",
-                }),
-                style: TextStyle(
-                  fontSize: FontSize.s13,
-                  fontWeight: FontWeight.w600,
-                  color: ColorManager.colorDoveGray600,
-                ),
+              padding: const EdgeInsets.only(
+                top: AppPadding.p8,
+                bottom: AppPadding.p12,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "trips_results_title".tr,
+                      style: TextStyle(
+                        fontSize: FontSize.s15,
+                        fontWeight: FontWeight.w600,
+                        color: ColorManager.colorFontPrimary,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "trips_results_count".trParams({
+                        "count": "${controller.results.length}",
+                      }),
+                      style: TextStyle(
+                        fontSize: FontSize.s12,
+                        fontWeight: FontWeight.w500,
+                        color: ColorManager.colorPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
     );
@@ -139,7 +166,7 @@ class TripsPage extends GetView<TripsPageController> {
       sliver: SliverList.separated(
         itemCount:
             controller.results.length + (controller.loadingMore.value ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
+        separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
         itemBuilder: (context, index) {
           if (index >= controller.results.length) {
             return Padding(
@@ -167,17 +194,14 @@ class _SearchForm extends GetView<TripsPageController> {
         AppPadding.p16,
         AppPadding.p4,
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
-        vertical: AppPadding.p10,
-      ),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ColorManager.colorWhite,
-        borderRadius: BorderRadius.circular(AppSize.s16),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -190,18 +214,12 @@ class _SearchForm extends GetView<TripsPageController> {
             borderRadius: BorderRadius.circular(8),
             child: Row(
               children: [
-                Icon(
-                  Icons.route_outlined,
-                  size: AppSize.s20,
-                  color: ColorManager.colorPrimary,
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     "trips_search_title".tr,
                     style: TextStyle(
-                      fontSize: FontSize.s15,
-                      fontWeight: FontWeight.bold,
+                      fontSize: FontSize.s20,
+                      fontWeight: FontWeight.w600,
                       color: ColorManager.colorFontPrimary,
                     ),
                   ),
@@ -238,26 +256,38 @@ class _SearchForm extends GetView<TripsPageController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: AppPadding.p10),
+        const SizedBox(height: 10),
+        _FieldLabel("trips_origin_label".tr),
         Obx(
-          () => _RouteSelector(
-            origin: controller.originGovernorate.value,
-            destination: controller.destinationGovernorate.value,
-            onTapOrigin: () => _openGovernoratePicker(
+          () => _DropdownField(
+            icon: Icons.location_on_rounded,
+            iconColor: ColorManager.colorPrimary,
+            value: controller.originGovernorate.value?.displayName,
+            onTap: () => _openGovernoratePicker(
               context,
               title: "trips_origin_governorate_title".tr,
               onSelected: controller.setOriginGovernorate,
             ),
-            onTapDestination: () => _openGovernoratePicker(
+          ),
+        ),
+        const SizedBox(height: 8),
+        _SwapDivider(onSwap: controller.swapGovernorates),
+        _FieldLabel("trips_destination_label".tr),
+        Obx(
+          () => _DropdownField(
+            icon: Icons.location_on_rounded,
+            iconColor: ColorManager.colorOrange,
+            value: controller.destinationGovernorate.value?.displayName,
+            onTap: () => _openGovernoratePicker(
               context,
               title: "trips_destination_governorate_title".tr,
               onSelected: controller.setDestinationGovernorate,
             ),
-            onSwap: controller.swapGovernorates,
           ),
         ),
-        const SizedBox(height: AppPadding.p8),
+        const SizedBox(height: 10),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Obx(
@@ -271,7 +301,7 @@ class _SearchForm extends GetView<TripsPageController> {
                 ),
               ),
             ),
-            const SizedBox(width: AppPadding.p8),
+            const SizedBox(width: 12),
             Expanded(
               child: Obx(
                 () => _DateField(
@@ -286,25 +316,25 @@ class _SearchForm extends GetView<TripsPageController> {
             ),
           ],
         ),
-        const SizedBox(height: AppPadding.p8),
+        const SizedBox(height: 10),
         Row(
           children: [
-            Obx(() => _SeatsStepper(seats: controller.seatsNeeded.value)),
-            const SizedBox(width: AppPadding.p8),
             Expanded(
-              child: Obx(
-                () => _VehicleTypeChips(selected: controller.vehicleType.value),
-              ),
+              child: _FieldLabel("trips_passengers_label".tr, bottom: 0),
             ),
+            Obx(() => _SeatsStepper(seats: controller.seatsNeeded.value)),
           ],
         ),
-        const SizedBox(height: AppPadding.p10),
+        const SizedBox(height: 10),
+        _FieldLabel("trips_vehicle_type_label".tr),
+        Obx(() => _VehicleTypeChips(selected: controller.vehicleType.value)),
+        const SizedBox(height: 14),
         Obx(
           () => AppButton(
             text: "trips_search_button".tr,
-            icon: const Icon(Icons.search, color: Colors.white, size: 18),
-            radius: 12,
-            minHeight: 42,
+            icon: const Icon(Icons.search, color: Colors.white, size: 22),
+            radius: 10,
+            minHeight: 44,
             loadingMode: controller.loadingState.value == LoadingState.loading,
             onPressed: controller.search,
           ),
@@ -415,109 +445,6 @@ class _GovernoratePickerContent extends GetView<TripsPageController> {
   }
 }
 
-class _RouteSelector extends StatelessWidget {
-  const _RouteSelector({
-    required this.origin,
-    required this.destination,
-    required this.onTapOrigin,
-    required this.onTapDestination,
-    required this.onSwap,
-  });
-
-  final GovernorateModel? origin;
-  final GovernorateModel? destination;
-  final VoidCallback onTapOrigin;
-  final VoidCallback onTapDestination;
-  final VoidCallback onSwap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: ColorManager.colorWhite,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                _RouteRow(
-                  label: "trips_route_from_label".tr,
-                  value: origin?.displayName,
-                  dotColor: ColorManager.colorPrimary,
-                  onTap: onTapOrigin,
-                ),
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 32),
-                  child: Divider(
-                    height: 1,
-                    color: ColorManager.colorTextFieldEnabledBorder,
-                  ),
-                ),
-                _RouteRow(
-                  label: "trips_route_to_label".tr,
-                  value: destination?.displayName,
-                  dotColor: ColorManager.colorOrange,
-                  onTap: onTapDestination,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppPadding.p8),
-            child: _SwapButton(onSwap: onSwap),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SwapButton extends StatefulWidget {
-  const _SwapButton({required this.onSwap});
-
-  final VoidCallback onSwap;
-
-  @override
-  State<_SwapButton> createState() => _SwapButtonState();
-}
-
-class _SwapButtonState extends State<_SwapButton> {
-  int _turns = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        setState(() => _turns++);
-        widget.onSwap();
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedRotation(
-        turns: _turns * 0.5,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutBack,
-        child: Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: ColorManager.colorBackground,
-            shape: BoxShape.circle,
-            border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
-          ),
-          child: Icon(
-            Icons.swap_vert_rounded,
-            size: 18,
-            color: ColorManager.colorPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// يضيف حركة "ضغط" خفيفة (scale down) فوق أي عنصر تفاعلي دون التأثير على
 /// معالج الضغط الأصلي (InkWell) الخاص به.
 class _PressScale extends StatefulWidget {
@@ -553,17 +480,39 @@ class _PressScaleState extends State<_PressScale> {
   }
 }
 
-class _RouteRow extends StatelessWidget {
-  const _RouteRow({
-    required this.label,
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text, {this.bottom = 6});
+
+  final String text;
+  final double bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: FontSize.s13,
+          fontWeight: FontWeight.w500,
+          color: ColorManager.colorDoveGray600,
+        ),
+      ),
+    );
+  }
+}
+
+class _DropdownField extends StatelessWidget {
+  const _DropdownField({
+    required this.icon,
+    required this.iconColor,
     required this.value,
-    required this.dotColor,
     required this.onTap,
   });
 
-  final String label;
+  final IconData icon;
+  final Color iconColor;
   final String? value;
-  final Color dotColor;
   final VoidCallback onTap;
 
   @override
@@ -571,70 +520,112 @@ class _RouteRow extends StatelessWidget {
     return _PressScale(
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppPadding.p12,
-            vertical: 6,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: AppPadding.p12),
+          decoration: BoxDecoration(
+            color: ColorManager.colorWhite,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
           ),
           child: Row(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                  boxShadow: value == null
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: dotColor.withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                ),
-              ),
+              Icon(icon, size: 22, color: iconColor),
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: FontSize.s12,
-                  color: ColorManager.colorGrey6,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   transitionBuilder: (child, animation) =>
                       FadeTransition(opacity: animation, child: child),
-                  child: Text(
-                    value ?? "trips_choose_governorate".tr,
+                  child: Align(
                     key: ValueKey(value),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                      fontSize: FontSize.s14,
-                      fontWeight: FontWeight.w600,
-                      color: value == null
-                          ? ColorManager.colorDoveGray300
-                          : ColorManager.colorFontPrimary,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      value ?? "trips_choose_governorate".tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: FontSize.s15,
+                        fontWeight: FontWeight.w500,
+                        color: value == null
+                            ? ColorManager.colorDoveGray300
+                            : ColorManager.colorFontPrimary,
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
               Icon(
                 Icons.keyboard_arrow_down,
-                size: 18,
+                size: 22,
                 color: ColorManager.colorGrey6,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SwapDivider extends StatefulWidget {
+  const _SwapDivider({required this.onSwap});
+
+  final VoidCallback onSwap;
+
+  @override
+  State<_SwapDivider> createState() => _SwapDividerState();
+}
+
+class _SwapDividerState extends State<_SwapDivider> {
+  int _turns = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Expanded(
+      child: Divider(
+        height: 1,
+        color: ColorManager.colorTextFieldEnabledBorder,
+      ),
+    );
+    return SizedBox(
+      height: 28,
+      child: Row(
+        children: [
+          line,
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              setState(() => _turns++);
+              widget.onSwap();
+            },
+            customBorder: const CircleBorder(),
+            child: AnimatedRotation(
+              turns: _turns * 0.5,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutBack,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: ColorManager.colorWhite,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ColorManager.colorTextFieldEnabledBorder,
+                  ),
+                ),
+                child: Icon(
+                  Icons.swap_vert_rounded,
+                  size: 20,
+                  color: ColorManager.colorPrimary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          line,
+        ],
       ),
     );
   }
@@ -655,47 +646,37 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _PressScale(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppPadding.p12,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: ColorManager.colorWhite,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldLabel(label),
+        _PressScale(
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: date == null
-                  ? ColorManager.colorTextFieldEnabledBorder
-                  : ColorManager.colorPrimary.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.calendar_today_outlined,
-                size: AppSize.s16,
-                color: ColorManager.colorDoveGray600,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: AppPadding.p12),
+              decoration: BoxDecoration(
+                color: ColorManager.colorWhite,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: date == null
+                      ? ColorManager.colorTextFieldEnabledBorder
+                      : ColorManager.colorPrimary.withValues(alpha: 0.5),
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: FontSize.s11,
-                        color: ColorManager.colorGrey6,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    AnimatedSwitcher(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 20,
+                    color: ColorManager.colorDoveGray600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
                       transitionBuilder: (child, animation) =>
                           FadeTransition(opacity: animation, child: child),
@@ -704,32 +685,37 @@ class _DateField extends StatelessWidget {
                             ? "trips_any_date".tr
                             : DateConverter.dateUTCToString(date),
                         key: ValueKey(date),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: FontSize.s13,
-                          fontWeight: FontWeight.w600,
+                          fontSize: FontSize.s14,
+                          fontWeight: FontWeight.w500,
                           color: date == null
                               ? ColorManager.colorDoveGray300
                               : ColorManager.colorFontPrimary,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              if (onClear != null)
-                InkWell(
-                  onTap: onClear,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Icon(
-                    Icons.close,
-                    size: 16,
-                    color: ColorManager.colorGrey6,
                   ),
-                ),
-            ],
+                  if (onClear != null)
+                    InkWell(
+                      onTap: onClear,
+                      customBorder: const CircleBorder(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: ColorManager.colorGrey6,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -744,10 +730,9 @@ class _SeatsStepper extends GetView<TripsPageController> {
     final value = seats ?? 1;
     final active = seats != null;
     return Container(
-      height: 38,
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
+        color: ColorManager.colorPrimary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -760,35 +745,22 @@ class _SeatsStepper extends GetView<TripsPageController> {
                 : null,
           ),
           SizedBox(
-            width: 42,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.airline_seat_recline_normal_rounded,
-                  size: 14,
-                  color: active
-                      ? ColorManager.colorPrimary
-                      : ColorManager.colorDoveGray300,
-                ),
-                const SizedBox(width: 3),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 150),
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: Text(
-                    "$value",
-                    key: ValueKey(value),
-                    style: TextStyle(
-                      fontSize: FontSize.s13,
-                      fontWeight: FontWeight.bold,
-                      color: active
-                          ? ColorManager.colorPrimary
-                          : ColorManager.colorGrey6,
-                    ),
+            width: 52,
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: Text(
+                  "$value",
+                  key: ValueKey(value),
+                  style: TextStyle(
+                    fontSize: FontSize.s16,
+                    fontWeight: FontWeight.w600,
+                    color: ColorManager.colorFontPrimary,
                   ),
                 ),
-              ],
+              ),
             ),
           ),
           _stepButton(
@@ -807,7 +779,7 @@ class _SeatsStepper extends GetView<TripsPageController> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 30,
+        width: 32,
         height: 32,
         decoration: BoxDecoration(
           color: enabled ? ColorManager.colorWhite : Colors.transparent,
@@ -815,7 +787,7 @@ class _SeatsStepper extends GetView<TripsPageController> {
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
@@ -824,9 +796,9 @@ class _SeatsStepper extends GetView<TripsPageController> {
         ),
         child: Icon(
           icon,
-          size: 16,
+          size: 20,
           color: enabled
-              ? ColorManager.colorFontPrimary
+              ? ColorManager.colorPrimary
               : ColorManager.colorDoveGray300,
         ),
       ),
@@ -839,78 +811,68 @@ class _VehicleTypeChips extends GetView<TripsPageController> {
 
   final String? selected;
 
+  static IconData _iconFor(String? slug) => switch (slug) {
+    'car' => Icons.directions_car_rounded,
+    'van' => Icons.airport_shuttle_rounded,
+    'bus' => Icons.directions_bus_rounded,
+    _ => Icons.apps_rounded,
+  };
+
   @override
   Widget build(BuildContext context) {
     final options = TripsPageController.vehicleTypeOptions;
-    final selectedIndex = options
-        .indexWhere((o) => o.slug == selected)
-        .clamp(0, options.length - 1);
-    final x = options.length == 1
-        ? 0.0
-        : -1 + 2 * selectedIndex / (options.length - 1);
+    return Row(
+      children: [
+        for (var i = 0; i < options.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: _chip(options[i])),
+        ],
+      ],
+    );
+  }
 
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            alignment: AlignmentDirectional(x, 0),
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            child: FractionallySizedBox(
-              widthFactor: 1 / options.length,
-              heightFactor: 1,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: ColorManager.colorWhite,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
+  Widget _chip(VehicleTypeOption option) {
+    final isSelected = option.slug == selected;
+    final color = isSelected
+        ? ColorManager.colorPrimary
+        : ColorManager.colorFontPrimary;
+    return _PressScale(
+      child: GestureDetector(
+        onTap: () => controller.setVehicleType(option.slug),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? ColorManager.colorPrimary.withValues(alpha: 0.06)
+                : ColorManager.colorWhite,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? ColorManager.colorPrimary
+                  : ColorManager.colorTextFieldEnabledBorder,
+              width: isSelected ? 1.5 : 1,
             ),
           ),
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              for (final option in options)
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => controller.setVehicleType(option.slug),
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: DefaultTextStyle.of(context).style.copyWith(
-                          fontSize: FontSize.s12,
-                          fontWeight: option.slug == selected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: option.slug == selected
-                              ? ColorManager.colorPrimary
-                              : ColorManager.colorGrey6,
-                        ),
-                        child: Text(
-                          option.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ),
+              Icon(_iconFor(option.slug), size: 20, color: color),
+              const SizedBox(height: 3),
+              Text(
+                option.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: FontSize.s12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: color,
                 ),
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -925,16 +887,16 @@ class _ProviderRatingPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (result.ratingIsDefault) {
-      return InfoPill(
+      return TripCardChip(
         icon: Icons.fiber_new_rounded,
         color: ColorManager.colorGreen3,
-        text: "trips_new_provider".tr,
+        label: "trips_new_provider".tr,
       );
     }
-    return InfoPill(
+    return TripCardChip(
       icon: Icons.star_rounded,
       color: ColorManager.colorOrange,
-      text: "trips_provider_rating".trParams({
+      label: "trips_provider_rating".trParams({
         "rating": result.avgRating.toStringAsFixed(1),
         "count": "${result.ratingsCount}",
       }),
@@ -949,154 +911,73 @@ class _TripResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priceLabel = Money.format(result.basePrice);
     final badgeColor = result.isOpenTrip
         ? ColorManager.colorOrange
         : ColorManager.colorPrimary;
-    final timeText = result.isOpenTrip
-        ? "trips_expires_at".trParams({
-            "date": DateConverter.dateToStringAR(result.expiresAt),
-            "time": DateConverter.timeUTCToString(result.expiresAt),
-          })
-        : "trips_departure_at".trParams({
-            "date": DateConverter.dateToStringAR(result.departureTime),
-            "time": DateConverter.timeUTCToString(result.departureTime),
-          });
+    final eventTime = result.isOpenTrip
+        ? result.expiresAt
+        : result.departureTime;
+    final dateText = DateConverter.dateToStringAR(eventTime);
+    final timeText = DateConverter.timeUTCToString(eventTime);
+    final showPickupChip =
+        !result.isOpenTrip && result.pickupMode != PickupMode.fixedPoint;
 
-    return Material(
-      color: ColorManager.colorWhite,
-      borderRadius: BorderRadius.circular(AppSize.s16),
-      elevation: 0,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return TripCardShell(
+      onTap: () => _onTapResult(result),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TripCardHeader(
+            title: result.route.displayName,
+            badge: result.isOpenTrip
+                ? "trips_open_trip_badge".tr
+                : "trips_scheduled_trip_badge".tr,
+            badgeColor: badgeColor,
+          ),
+          const SizedBox(height: 8),
+          TripInfoBox(
+            start: TripInfoItem(
+              icon: result.isOpenTrip
+                  ? Icons.hourglass_bottom_rounded
+                  : Icons.calendar_today_outlined,
+              title: result.isOpenTrip
+                  ? "trips_expires_at"
+                        .trParams({"date": dateText, "time": ""})
+                        .trim()
+                  : dateText,
+              subtitle: timeText,
             ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          onTap: () => _onTapResult(result),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.route_outlined,
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        result.route.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: FontSize.s15,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorFontPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        result.isOpenTrip
-                            ? "trips_open_trip_badge".tr
-                            : "trips_scheduled_trip_badge".tr,
-                        style: TextStyle(
-                          fontSize: FontSize.s10_5,
-                          fontWeight: FontWeight.bold,
-                          color: badgeColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Wrap(
-                  spacing: AppPadding.p8,
-                  runSpacing: AppPadding.p8,
-                  children: [
-                    InfoPill(
-                      icon: Icons.directions_car_outlined,
-                      text: "trips_result_seats_available".trParams({
-                        "vehicleType": result.vehicle.vehicleType,
-                        "seats": "${result.availableSeats}",
-                      }),
-                    ),
-                    InfoPill(
-                      icon: result.isOpenTrip
-                          ? Icons.hourglass_bottom_outlined
-                          : Icons.schedule_outlined,
-                      text: timeText,
-                    ),
-                    if (!result.isOpenTrip &&
-                        result.pickupMode != PickupMode.fixedPoint)
-                      InfoPill(
-                        icon: result.pickupMode == PickupMode.doorToDoor
-                            ? Icons.home_outlined
-                            : Icons.pin_drop_outlined,
-                        color: ColorManager.colorPrimary,
-                        text: result.pickupMode == PickupMode.doorToDoor
-                            ? "pickup_mode_door_to_door".tr
-                            : "pickup_mode_collection_points".trParams({
-                                "count": "${result.collectionPoints.length}",
-                              }),
-                      ),
-                    _ProviderRatingPill(result: result),
-                  ],
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Divider(
-                  height: 1,
-                  color: ColorManager.colorTextFieldEnabledBorder,
-                ),
-                const SizedBox(height: AppPadding.p8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        priceLabel,
-                        style: TextStyle(
-                          fontSize: FontSize.s16,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
-                      color: ColorManager.colorGrey6,
-                    ),
-                  ],
-                ),
-              ],
+            end: TripInfoItem(
+              icon: Icons.directions_car_outlined,
+              title: "trips_seats_available_short".trParams({
+                "seats": "${result.availableSeats}",
+              }),
+              subtitle: result.vehicle.vehicleType,
             ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (showPickupChip)
+                TripCardChip(
+                  icon: result.pickupMode == PickupMode.doorToDoor
+                      ? Icons.home_outlined
+                      : Icons.location_on_outlined,
+                  color: ColorManager.colorPrimary,
+                  label: result.pickupMode == PickupMode.doorToDoor
+                      ? "pickup_mode_door_to_door".tr
+                      : "pickup_mode_collection_points".trParams({
+                          "count": "${result.collectionPoints.length}",
+                        }),
+                ),
+              _ProviderRatingPill(result: result),
+            ],
+          ),
+          const SizedBox(height: 6),
+          TripCardFooter(price: Money.format(result.basePrice)),
+        ],
       ),
     );
   }
