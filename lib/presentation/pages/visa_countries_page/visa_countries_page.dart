@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_country_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/pages/visa_countries_page/visa_countries_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
@@ -20,9 +22,9 @@ class VisaCountriesPage extends GetView<VisaCountriesPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "visa_countries_title".tr, backIcon: true),
-      body: SafeArea(child: Obx(() => _body())),
+      body: AppBackground(child: SafeArea(child: Obx(() => _body()))),
     );
   }
 
@@ -74,7 +76,7 @@ class VisaCountriesPage extends GetView<VisaCountriesPageController> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppPadding.p16),
       itemCount: controller.countries.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p12),
+      separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
       itemBuilder: (context, index) => FadeSlideIn(
         delay: Duration(milliseconds: 40 * index.clamp(0, 8)),
         child: _CountryCard(country: controller.countries[index]),
@@ -90,79 +92,52 @@ class _CountryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return TripCardShell(
+      onTap: () => Get.toNamed(
+        AppRoutes.visaRequestFormRoute,
+        arguments: {
+          "mode": "create",
+          "countryId": country.id,
+          "price": country.visaPrice,
+        },
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: ColorManager.colorPrimary,
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          onTap: () => Get.toNamed(
-            AppRoutes.visaRequestFormRoute,
-            arguments: {
-              "mode": "create",
-              "countryId": country.id,
-              "price": country.visaPrice,
-            },
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: ColorManager.colorPrimary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.flag_outlined,
-                    size: 18,
-                    color: ColorManager.colorPrimary,
-                  ),
-                ),
-                const SizedBox(width: AppPadding.p12),
-                Expanded(
-                  child: Text(
-                    country.displayName,
-                    style: TextStyle(
-                      fontSize: FontSize.s15,
-                      fontWeight: FontWeight.bold,
-                      color: ColorManager.colorFontPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  Money.format(country.visaPrice),
-                  style: TextStyle(
-                    fontSize: FontSize.s14,
-                    fontWeight: FontWeight.bold,
-                    color: ColorManager.colorPrimary,
-                  ),
-                ),
-                const SizedBox(width: AppPadding.p8),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 12,
-                  color: ColorManager.colorGrey6,
-                ),
-              ],
+            child: const Icon(
+              Icons.flag_outlined,
+              size: 18,
+              color: Colors.white,
             ),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              country.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: FontSize.s14,
+                fontWeight: FontWeight.w500,
+                color: ColorManager.colorFontPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TripCardChip(
+            icon: Icons.payments_outlined,
+            color: ColorManager.colorPrimary,
+            label: Money.format(country.visaPrice),
+          ),
+          const SizedBox(width: 8),
+          const TripCardArrow(),
+        ],
       ),
     );
   }

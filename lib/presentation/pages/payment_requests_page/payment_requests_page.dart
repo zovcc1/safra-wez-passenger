@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/payment_request_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
@@ -190,51 +191,38 @@ class _RequestCard extends StatelessWidget {
       _ => ColorManager.colorError300,
     };
 
-    final seatsText = "payment_requests_seats_count".trParams({
-      "count": "${request.seatsCount}",
-    });
+    final seatsText = request.seatsCount == 1
+        ? "booking_details_seats_one".tr
+        : "booking_details_seats_many".trParams({
+            "count": "${request.seatsCount}",
+          });
 
-    return TripCardShell(
+    return CompactTripCard(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TripCardHeader(
-            title: route?.displayName ?? "#${request.paymentRequestId}",
-            badge: "payment_request_status_${request.status}".tr,
-            badgeColor: color,
+      title: route?.displayName ?? "#${request.paymentRequestId}",
+      badge: "payment_request_status_${request.status}".tr,
+      badgeColor: color,
+      details: [
+        if (departure != null) ...[
+          TextSpan(
+            text: "${DateFormat("EEEE d MMMM", "ar").format(departure)} · ",
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              if (departure != null) ...[
-                _Meta(
-                  icon: Icons.calendar_today_rounded,
-                  text: DateConverter.dateToStringAR(departure),
-                ),
-                _Meta(
-                  icon: Icons.access_time_rounded,
-                  text: DateConverter.timeUTCToString(departure),
-                ),
-              ],
-              _Meta(icon: Icons.event_seat_outlined, text: seatsText),
-              if (request.isPending && request.expiresAt != null)
-                _Meta(
-                  icon: Icons.timer_outlined,
-                  color: ColorManager.colorOrange,
-                  text: "payment_requests_expires_at".trParams({
-                    "time": DateConverter.timeUTCToString(request.expiresAt),
-                  }),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // المبلغ نص من الخادم ولا يُحوَّل إلى float.
-          TripCardFooter(price: Money.format(request.amount)),
+          CompactTripCard.strong(DateConverter.timeUTCToString(departure)),
+          const TextSpan(text: " · "),
         ],
-      ),
+        TextSpan(text: seatsText),
+      ],
+      // المبلغ نص من الخادم ولا يُحوَّل إلى float.
+      price: Money.format(request.amount),
+      extra: request.isPending && request.expiresAt != null
+          ? _Meta(
+              icon: Icons.timer_outlined,
+              color: ColorManager.colorOrange,
+              text: "payment_requests_expires_at".trParams({
+                "time": DateConverter.timeUTCToString(request.expiresAt),
+              }),
+            )
+          : null,
     );
   }
 }

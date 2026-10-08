@@ -3,11 +3,12 @@ import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/wallet_model.dart';
 import 'package:safraa_passenger_app/data/models/wallet_transaction_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/wallet_page/wallet_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
@@ -23,27 +24,14 @@ class WalletPage extends GetView<WalletPageController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
-      appBar: NormalAppBar(
-        title: "wallet_title".tr,
-        backIcon: true,
-        actions: [
-          Obx(
-            () => IconButton(
-              onPressed: () => _openFilters(context),
-              icon: Badge(
-                isLabelVisible: controller.hasFilters,
-                smallSize: 8,
-                child: const Icon(Icons.filter_list_rounded),
-              ),
-            ),
+      backgroundColor: Colors.transparent,
+      appBar: NormalAppBar(title: "wallet_title".tr, backIcon: true),
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.refreshAll,
+            child: Obx(() => _body(context)),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.refreshAll,
-          child: Obx(() => _body(context)),
         ),
       ),
     );
@@ -64,24 +52,41 @@ class WalletPage extends GetView<WalletPageController> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: AppPadding.p16),
           sliver: SliverToBoxAdapter(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    "wallet_transactions_title".tr,
-                    style: TextStyle(
-                      fontSize: FontSize.s15,
-                      fontWeight: FontWeight.bold,
-                      color: ColorManager.colorFontPrimary,
+            // ارتفاع ثابت كي لا يتحرك زر الفلتر عند ظهور/اختفاء زر "مسح".
+            child: SizedBox(
+              height: 40,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "wallet_transactions_title".tr,
+                      style: TextStyle(
+                        fontSize: FontSize.s15,
+                        fontWeight: FontWeight.w500,
+                        color: ColorManager.colorFontPrimary,
+                      ),
                     ),
                   ),
-                ),
-                if (controller.hasFilters)
-                  TextButton(
-                    onPressed: controller.clearFilters,
-                    child: Text("wallet_filter_clear".tr),
+                  if (controller.hasFilters)
+                    TextButton(
+                      onPressed: controller.clearFilters,
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      child: Text(
+                        "wallet_filter_clear".tr,
+                        style: TextStyle(fontSize: FontSize.s12),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  _FilterButton(
+                    active: controller.hasFilters,
+                    onTap: () => _openFilters(context),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -110,8 +115,7 @@ class WalletPage extends GetView<WalletPageController> {
             padding: const EdgeInsets.all(AppPadding.p16),
             sliver: SliverList.separated(
               itemCount: txs.length + (controller.loadingMore.value ? 1 : 0),
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppPadding.p12),
+              separatorBuilder: (_, _) => const SizedBox(height: AppPadding.p8),
               itemBuilder: (context, index) {
                 if (index >= txs.length) {
                   return Padding(
@@ -140,7 +144,7 @@ class WalletPage extends GetView<WalletPageController> {
     if (state == LoadingState.hasError || controller.wallet.value == null) {
       return Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.p12,
+          horizontal: 14,
           vertical: AppPadding.p10,
         ),
         decoration: BoxDecoration(
@@ -149,7 +153,7 @@ class WalletPage extends GetView<WalletPageController> {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+              blurRadius: 16,
               offset: const Offset(0, 4),
             ),
           ],
@@ -198,7 +202,7 @@ class WalletPage extends GetView<WalletPageController> {
                   "wallet_filter_title".tr,
                   style: TextStyle(
                     fontSize: FontSize.s16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
@@ -254,8 +258,11 @@ class WalletPage extends GetView<WalletPageController> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: ColorManager.colorBackground,
+                      color: ColorManager.colorWhite,
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: ColorManager.colorTextFieldEnabledBorder,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -272,7 +279,7 @@ class WalletPage extends GetView<WalletPageController> {
                                 : "${DateConverter.dateUTCToString(range!.start)}  →  ${DateConverter.dateUTCToString(range!.end)}",
                             style: TextStyle(
                               fontSize: FontSize.s13,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               color: range == null
                                   ? ColorManager.colorDoveGray300
                                   : ColorManager.colorFontPrimary,
@@ -327,6 +334,45 @@ class WalletPage extends GetView<WalletPageController> {
   }
 }
 
+/// زر الفلتر بإطار، يجلس في نفس صف عنوان "الحركات".
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({required this.active, required this.onTap});
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active
+        ? ColorManager.colorPrimary
+        : ColorManager.colorTextFieldEnabledBorder;
+    return Material(
+      color: ColorManager.colorWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: color),
+      ),
+      child: InkWell(
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        onTap: onTap,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            Icons.tune_rounded,
+            size: 19,
+            color: active
+                ? ColorManager.colorPrimary
+                : ColorManager.colorFontPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({required this.wallet});
 
@@ -334,73 +380,143 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // لون خاص ببطاقة الرصيد (تيل) لتتمايز عن اللون الأساسي للتطبيق.
+    const primary = Color(0xFF0E7C86);
     return Container(
-      padding: const EdgeInsets.all(AppPadding.p16),
       decoration: BoxDecoration(
-        color: ColorManager.colorPrimary,
         borderRadius: BorderRadius.circular(AppSize.s16),
-        boxShadow: [
-          BoxShadow(
-            color: ColorManager.colorPrimary.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            primary,
+            Color.alphaBlend(Colors.black.withValues(alpha: 0.22), primary),
+          ],
+        ),
+        // الوهج الملوّن يبدو سيئًا على الخلفية الداكنة، فيُلغى هناك.
+        boxShadow: ColorManager.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: primary.withValues(alpha: 0.28),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.account_balance_wallet_outlined,
-                size: AppSize.s20,
-                color: Colors.white70,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "wallet_available_balance".tr,
-                style: TextStyle(fontSize: FontSize.s13, color: Colors.white70),
-              ),
-            ],
+          // دوائر زخرفية خفيفة في الخلفية
+          PositionedDirectional(
+            top: -34,
+            end: -26,
+            child: _Bubble(size: 110, alpha: 0.08),
           ),
-          const SizedBox(height: AppPadding.p4),
-          Text(
-            Money.format(wallet.balance),
-            style: TextStyle(
-              fontSize: FontSize.s22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          PositionedDirectional(
+            bottom: -44,
+            start: -30,
+            child: _Bubble(size: 120, alpha: 0.06),
           ),
-          const SizedBox(height: AppPadding.p12),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _Stat(
-                    label: "wallet_frozen_balance".tr,
-                    value: Money.format(wallet.frozenBalance),
+                Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 17,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "wallet_available_balance".tr,
+                      style: TextStyle(
+                        fontSize: FontSize.s12,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  Money.format(wallet.balance),
+                  style: TextStyle(
+                    fontSize: 26,
+                    height: 1.1,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
                 ),
-                Expanded(
-                  child: _Stat(
-                    label: "wallet_total_balance".tr,
-                    value: Money.format(wallet.totalBalance),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppPadding.p12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _Stat(
+                            icon: Icons.lock_outline_rounded,
+                            label: "wallet_frozen_balance".tr,
+                            value: Money.format(wallet.frozenBalance),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          margin: const EdgeInsets.symmetric(horizontal: 10),
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
+                        Expanded(
+                          child: _Stat(
+                            icon: Icons.savings_outlined,
+                            label: "wallet_total_balance".tr,
+                            value: Money.format(wallet.totalBalance),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.size, required this.alpha});
+
+  final double size;
+  final double alpha;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: alpha),
       ),
     );
   }
@@ -429,17 +545,19 @@ class _TypePill extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? ColorManager.colorPrimary.withValues(alpha: 0.12)
-              : ColorManager.colorBackground,
+              : ColorManager.colorWhite,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? ColorManager.colorPrimary : Colors.transparent,
+            color: selected
+                ? ColorManager.colorPrimary
+                : ColorManager.colorTextFieldEnabledBorder,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: FontSize.s12,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
             color: selected
                 ? ColorManager.colorPrimary
                 : ColorManager.colorGrey6,
@@ -451,27 +569,43 @@ class _TypePill extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.icon, required this.label, required this.value});
 
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: FontSize.s11, color: Colors.white70),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: FontSize.s13,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.8)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: FontSize.s10_5,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: FontSize.s12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -498,102 +632,77 @@ class _TransactionCard extends StatelessWidget {
         ? ColorManager.colorError300
         : ColorManager.colorFontPrimary;
 
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: ColorManager.colorWhite,
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return TripCardShell(
+      onTap: canOpenBooking ? () => onOpenBooking(refId) : null,
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: display.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppSize.s16),
-          onTap: canOpenBooking ? () => onOpenBooking(refId) : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppPadding.p12,
-              vertical: AppPadding.p10,
-            ),
-            child: Row(
+            child: Icon(display.icon, color: display.color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: display.color.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(display.icon, color: display.color, size: 18),
-                ),
-                const SizedBox(width: AppPadding.p12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        display.label,
-                        style: TextStyle(
-                          fontSize: FontSize.s14,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorFontPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: AppPadding.p8,
-                        runSpacing: 6,
-                        children: [
-                          if (ref != null)
-                            InfoPill(
-                              icon: Icons.tag,
-                              text: refId == null
-                                  ? WalletTypeDisplay.referenceLabel(ref.type)
-                                  : "${WalletTypeDisplay.referenceLabel(ref.type)} #$refId",
-                            ),
-                          InfoPill(
-                            icon: Icons.schedule_outlined,
-                            text:
-                                "${DateConverter.dateToStringAR(tx.createdAt)} • ${DateConverter.timeUTCToString(tx.createdAt)}",
-                          ),
-                        ],
-                      ),
-                    ],
+                Text(
+                  display.label,
+                  style: TextStyle(
+                    fontSize: FontSize.s13,
+                    fontWeight: FontWeight.w500,
+                    color: ColorManager.colorFontPrimary,
                   ),
                 ),
-                const SizedBox(width: AppPadding.p8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      Money.signed(sign, tx.amount),
-                      style: TextStyle(
-                        fontSize: FontSize.s15,
-                        fontWeight: FontWeight.bold,
-                        color: amountColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "wallet_balance_after".trParams({
-                        "amount": Money.format(tx.balanceAfter),
-                      }),
-                      style: TextStyle(
-                        fontSize: FontSize.s10_5,
-                        color: ColorManager.colorGrey6,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                if (ref != null)
+                  TripCardChip(
+                    icon: Icons.tag,
+                    color: ColorManager.colorGrey6,
+                    label: refId == null
+                        ? WalletTypeDisplay.referenceLabel(ref.type)
+                        : "${WalletTypeDisplay.referenceLabel(ref.type)} #$refId",
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  "${DateConverter.dateToStringAR(tx.createdAt)} • ${DateConverter.timeUTCToString(tx.createdAt)}",
+                  style: TextStyle(
+                    fontSize: FontSize.s10,
+                    color: ColorManager.colorGrey6.withValues(alpha: 0.8),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(width: AppPadding.p8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                Money.signed(sign, tx.amount),
+                style: TextStyle(
+                  fontSize: FontSize.s14,
+                  fontWeight: FontWeight.w500,
+                  color: amountColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                "wallet_balance_after".trParams({
+                  "amount": Money.format(tx.balanceAfter),
+                }),
+                style: TextStyle(
+                  fontSize: FontSize.s10,
+                  color: ColorManager.colorGrey6,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

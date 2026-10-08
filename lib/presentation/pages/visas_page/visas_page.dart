@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/visa_request_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/compact_add_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
@@ -22,32 +24,9 @@ class VisasPage extends GetView<VisasPageController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: Material(
-        color: ColorManager.colorPrimary,
-        elevation: 2,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => Get.toNamed(AppRoutes.visaCountriesRoute),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                const SizedBox(width: 6),
-                Text(
-                  "visas_apply_button".tr,
-                  style: TextStyle(
-                    fontSize: FontSize.s12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      floatingActionButton: CompactAddButton(
+        label: "visas_apply_button".tr,
+        onTap: () => Get.toNamed(AppRoutes.visaCountriesRoute),
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -137,150 +116,95 @@ class _VisaRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = VisaStatusDisplay.of(request.status);
 
-    return TripCardShell(
+    // الطلب المسحوب يُعرض تاريخ سحبه (القرار) إن وُجد، وإلا تاريخ التقديم.
+    final isWithdrawn = request.status == "withdrawn";
+    final stampDate = isWithdrawn
+        ? (request.decidedAt ?? request.submittedAt)
+        : request.submittedAt;
+    final hasNote =
+        (request.status == "needs_info" || request.status == "rejected") &&
+        (request.adminNote?.isNotEmpty ?? false);
+    final hasExtra =
+        request.visaProviderName != null ||
+        request.assignedAt != null ||
+        request.deliveredAt != null ||
+        hasNote;
+
+    return CompactTripCard(
       onTap: () => Get.toNamed(
         AppRoutes.visaRequestDetailsRoute,
         arguments: {"requestId": request.id},
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: ColorManager.colorPrimary,
-                  borderRadius: BorderRadius.circular(10),
+      title:
+          request.country?.displayName ??
+          "visas_fallback_title".trParams({"id": "${request.id}"}),
+      badge: status.label,
+      badgeColor: status.color,
+      details: [
+        if (stampDate != null)
+          TextSpan(
+            text: (isWithdrawn ? "visas_withdrawn_on" : "visas_submitted_on")
+                .trParams({"date": DateFormat("d MMMM", "ar").format(stampDate)}),
+          ),
+        if (request.paymentMethod != null)
+          TextSpan(
+            text:
+                "${stampDate != null ? " · " : ""}${VisaStatusDisplay.paymentLabel(request.paymentMethod!)}",
+          ),
+      ],
+      price: Money.format(request.quotedAmount),
+      extra: hasExtra
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    if (request.visaProviderName != null)
+                      _Meta(
+                        icon: Icons.business_outlined,
+                        text: request.visaProviderName!,
+                      ),
+                    if (request.assignedAt != null)
+                      _Meta(
+                        icon: Icons.person_search_outlined,
+                        text:
+                            "${"visa_details_step_assigned".tr} • ${DateConverter.dateToStringAR(request.assignedAt)}",
+                      ),
+                    if (request.deliveredAt != null)
+                      _Meta(
+                        icon: Icons.check_circle_outline,
+                        color: ColorManager.colorGreen3,
+                        text:
+                            "${"visa_details_step_delivered".tr} • ${DateConverter.dateToStringAR(request.deliveredAt)}",
+                      ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.badge_outlined,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  request.country?.displayName ??
-                      "visas_fallback_title".trParams({"id": "${request.id}"}),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s15,
-                    fontWeight: FontWeight.w500,
-                    color: ColorManager.colorFontPrimary,
+                if (hasNote) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    request.adminNote!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: FontSize.s12,
+                      color: status.color,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _StatusPill(label: status.label, color: status.color),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              _Meta(
-                icon: Icons.confirmation_number_outlined,
-                text: "visas_fallback_title".trParams({"id": "${request.id}"}),
-                strong: true,
-              ),
-              if (request.submittedAt != null)
-                _Meta(
-                  icon: Icons.calendar_today_rounded,
-                  text: DateConverter.dateToStringAR(request.submittedAt),
-                ),
-              if (request.paymentMethod != null)
-                _Meta(
-                  icon: Icons.account_balance_wallet_outlined,
-                  text: VisaStatusDisplay.paymentLabel(request.paymentMethod!),
-                ),
-              if (request.visaProviderName != null)
-                _Meta(
-                  icon: Icons.business_outlined,
-                  text: request.visaProviderName!,
-                ),
-              if (request.assignedAt != null)
-                _Meta(
-                  icon: Icons.person_search_outlined,
-                  text:
-                      "${"visa_details_step_assigned".tr} • ${DateConverter.dateToStringAR(request.assignedAt)}",
-                ),
-              if (request.deliveredAt != null)
-                _Meta(
-                  icon: Icons.check_circle_outline,
-                  color: ColorManager.colorGreen3,
-                  text:
-                      "${"visa_details_step_delivered".tr} • ${DateConverter.dateToStringAR(request.deliveredAt)}",
-                ),
-            ],
-          ),
-          if ((request.status == "needs_info" ||
-                  request.status == "rejected") &&
-              (request.adminNote?.isNotEmpty ?? false)) ...[
-            const SizedBox(height: 6),
-            Text(
-              request.adminNote!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: FontSize.s12, color: status.color),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Divider(
-            height: 1,
-            color: ColorManager.colorTextFieldEnabledBorder.withValues(
-              alpha: 0.4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  Money.format(request.quotedAmount),
-                  style: TextStyle(
-                    fontSize: FontSize.s15,
-                    fontWeight: FontWeight.w500,
-                    color: ColorManager.colorPrimary,
-                  ),
-                ),
-              ),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: ColorManager.colorPrimary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                ],
+              ],
+            )
+          : null,
     );
   }
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta({
-    required this.icon,
-    required this.text,
-    this.strong = false,
-    this.color,
-  });
+  const _Meta({required this.icon, required this.text, this.color});
 
   final IconData icon;
   final String text;
-  final bool strong;
   final Color? color;
 
   @override
@@ -295,51 +219,11 @@ class _Meta extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: FontSize.s12,
-              fontWeight: strong ? FontWeight.w500 : FontWeight.w400,
-              color: strong
-                  ? ColorManager.colorFontPrimary
-                  : (color ?? ColorManager.colorDoveGray600),
+              color: color ?? ColorManager.colorDoveGray600,
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: FontSize.s10_5,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

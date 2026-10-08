@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/core/services/cache_service.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/guest_gate_widget.dart';
@@ -97,7 +98,7 @@ class MainPage extends GetView<MainPageController> {
                     ),
                     fit: BoxFit.cover,
                     colorFilter: ColorFilter.mode(
-                      ColorManager.colorWhite.withValues(alpha: 0.75),
+                      AppBackground.overlayColor,
                       BlendMode.srcOver,
                     ),
                   ),

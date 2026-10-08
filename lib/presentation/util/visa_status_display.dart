@@ -27,17 +27,17 @@ class VisaStatusDisplay {
       case "submitted":
         return VisaStatusDisplay(
           "visa_status_submitted".tr,
-          ColorManager.colorGrey6,
+          const Color(0xFFD4A017),
         );
       case "under_review":
         return VisaStatusDisplay(
           "visa_status_under_review".tr,
-          ColorManager.colorOrange,
+          ColorManager.colorPrimary2,
         );
       case "assigned":
         return VisaStatusDisplay(
           "visa_status_assigned".tr,
-          ColorManager.colorOrange,
+          const Color(0xFF14A3A3),
         );
       case "approved":
         return VisaStatusDisplay(
@@ -67,7 +67,7 @@ class VisaStatusDisplay {
       case "cancelled":
         return VisaStatusDisplay(
           "visa_status_cancelled".tr,
-          ColorManager.colorGrey6,
+          ColorManager.colorFontSecondary,
         );
       default:
         return VisaStatusDisplay(status, ColorManager.colorGrey6);

@@ -26,6 +26,7 @@ class PhoneNumberInput extends StatelessWidget {
     this.initialCountyCode,
     required this.languageCode,
     this.autoValidateMode = AutovalidateMode.disabled,
+    this.fieldStyle = false,
   });
 
   final dynamic Function(String) onChanged;
@@ -43,6 +44,14 @@ class PhoneNumberInput extends StatelessWidget {
   final AutovalidateMode? autoValidateMode;
   final String title;
 
+  /// true: نفس طراز حقول الرحلات (أبيض، حدّ رفيع، زوايا 10، بدون ثقل زائد).
+  final bool fieldStyle;
+
+  OutlineInputBorder _border(Color color) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: color),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -50,11 +59,12 @@ class PhoneNumberInput extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Get.textTheme.titleMedium,
-          textAlign: TextAlign.start,
-        ),
+        if (title.isNotEmpty)
+          Text(
+            title,
+            style: Get.textTheme.titleMedium,
+            textAlign: TextAlign.start,
+          ),
         Directionality(
           textDirection: TextDirection.ltr,
           child: Container(
@@ -82,15 +92,18 @@ class PhoneNumberInput extends StatelessWidget {
               onCountryChanged: (Country country) {
                 countryCode.value = "+${country.fullCountryCode}";
               },
-              dropdownIcon: const Icon(Icons.keyboard_arrow_down),
+              dropdownIcon: Icon(
+                Icons.keyboard_arrow_down,
+                size: fieldStyle ? 18 : 24,
+              ),
               inputFormatters: [PhoneNumberFormatter(onChanged: onChanged)],
               decoration: InputDecoration(
                 isDense: true,
                 constraints: const BoxConstraints(minHeight: 40),
                 counterText: '',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppPadding.p16,
-                  vertical: AppPadding.p12,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: fieldStyle ? AppPadding.p12 : AppPadding.p16,
+                  vertical: fieldStyle ? 10 : AppPadding.p12,
                 ),
                 filled: true,
                 hintText: hintText,
@@ -98,8 +111,37 @@ class PhoneNumberInput extends StatelessWidget {
                 fillColor: ColorManager.colorWhite,
                 suffixIcon: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Assets.icons.contactIcon.svg(width: AppSize.s28),
+                  child: Assets.icons.contactIcon.svg(
+                    width: fieldStyle ? 22 : AppSize.s28,
+                    colorFilter: fieldStyle
+                        ? ColorFilter.mode(
+                            ColorManager.colorPrimary,
+                            BlendMode.srcIn,
+                          )
+                        : null,
+                  ),
                 ),
+                prefixIconConstraints: fieldStyle
+                    ? const BoxConstraints(minWidth: 0, minHeight: 0)
+                    : null,
+                suffixIconConstraints: fieldStyle
+                    ? const BoxConstraints(minWidth: 0, minHeight: 0)
+                    : null,
+                enabledBorder: fieldStyle
+                    ? _border(ColorManager.colorTextFieldEnabledBorder)
+                    : null,
+                focusedBorder: fieldStyle
+                    ? _border(ColorManager.colorTextFieldFocusedBorder)
+                    : null,
+                errorBorder: fieldStyle
+                    ? _border(ColorManager.colorTextFieldErrorBorder)
+                    : null,
+                focusedErrorBorder: fieldStyle
+                    ? _border(ColorManager.colorTextFieldErrorBorder)
+                    : null,
+                border: fieldStyle
+                    ? _border(ColorManager.colorTextFieldEnabledBorder)
+                    : null,
               ),
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/pages/visa_request_details_page/visa_request_details_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
@@ -544,48 +545,44 @@ class _FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 9),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: ColorManager.colorTextFieldEnabledBorder.withValues(
-                    alpha: 0.5,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 9),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: ColorManager.colorGrey6,
                   ),
                 ),
               ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 12, color: ColorManager.colorGrey6),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: muted
-                    ? ColorManager.colorGrey6
-                    : ColorManager.colorFontPrimary,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: muted
+                        ? ColorManager.colorGrey6
+                        : ColorManager.colorFontPrimary,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        if (!isLast) const TripCardDivider(),
+      ],
     );
   }
 }
 
-/// بطاقة ملف قابل للتنزيل (داخل بطاقة البيانات وبطاقة المستندات).
 class _DocumentRow extends StatelessWidget {
   const _DocumentRow({required this.document, this.label});
 

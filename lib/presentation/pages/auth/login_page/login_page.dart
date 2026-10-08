@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/core/app_config/app_translation.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/custom_text_field.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/labeled_text_field.dart';
 import 'package:safraa_passenger_app/presentation/pages/auth/login_page/login_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/assets.gen.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
@@ -18,130 +19,149 @@ class LoginPage extends GetView<LoginPageController> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: ColorManager.colorBackground,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: AppSize.sWidth * 0.07),
-            child: Form(
-              key: controller.formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: AppSize.sHeight * 0.08),
-                  const _LogoBadge(),
-                  Text(
-                    "auth_login_welcome_title".tr,
-                    textAlign: TextAlign.center,
-                    style: Get.textTheme.headlineLarge,
-                  ),
-                  SizedBox(height: AppSize.s8),
-                  Text(
-                    "auth_login_welcome_subtitle".tr,
-                    textAlign: TextAlign.center,
-                    style: Get.textTheme.bodyMedium?.copyWith(
-                      color: ColorManager.colorDoveGray600,
-                    ),
-                  ),
-                  SizedBox(height: AppSize.sHeight * 0.06),
-                  PhoneNumberInput(
-                    title: "auth_phone_label".tr,
-                    hintText: "912345678",
-                    textEditingController: controller.phoneController,
-                    countryCode: controller.countryCode,
-                    readOnly: false,
-                    languageCode: AppTranslations.currentLang,
-                    validator: controller.phoneValidator,
-                    onChanged: controller.onPhoneChanged,
-                    autoValidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  Obx(
-                    () => CustomTextField(
-                      title: "auth_password_label".tr,
-                      hint: "••••••••",
-                      obscureText: controller.obscurePassword.value,
-                      textEditingController: controller.passwordController,
-                      textInputType: TextInputType.visiblePassword,
-                      textInputAction: TextInputAction.done,
-                      fillColor: ColorManager.colorWhite,
-                      borderRadius: 10,
-                      validator: controller.validatePassword,
-                      icon: Assets.icons.passwordIcon.svg(
-                        width: AppSize.s20,
-                        colorFilter: ColorFilter.mode(
-                          ColorManager.colorDoveGray600,
-                          BlendMode.srcIn,
-                        ),
+        backgroundColor: Colors.transparent,
+        body: AppBackground(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: AppSize.sWidth * 0.07),
+              child: Form(
+                key: controller.formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: AppSize.sHeight * 0.06),
+                    const _LogoBadge(),
+                    const SizedBox(height: AppPadding.p8),
+                    Text(
+                      "auth_login_welcome_title".tr,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: FontSize.s20,
+                        fontWeight: FontWeight.w500,
+                        color: ColorManager.colorFontPrimary,
                       ),
-                      suffixIcon: InkWell(
-                        onTap: controller.togglePasswordVisibility,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Icon(
-                            controller.obscurePassword.value
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            size: AppSize.s20,
-                            color: ColorManager.colorDoveGray600,
+                    ),
+                    const SizedBox(height: AppPadding.p4),
+                    Text(
+                      "auth_login_welcome_subtitle".tr,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: FontSize.s12,
+                        color: ColorManager.colorGrey6,
+                      ),
+                    ),
+                    SizedBox(height: AppSize.sHeight * 0.04),
+                    FieldLabel("auth_phone_label".tr),
+                    PhoneNumberInput(
+                      title: "",
+                      hintText: "912345678",
+                      minHeight: 42,
+                      borderRadius: 10,
+                      fieldStyle: true,
+                      textEditingController: controller.phoneController,
+                      countryCode: controller.countryCode,
+                      readOnly: false,
+                      languageCode: AppTranslations.currentLang,
+                      validator: controller.phoneValidator,
+                      onChanged: controller.onPhoneChanged,
+                      autoValidateMode: AutovalidateMode.onUserInteraction,
+                    ),
+                    const SizedBox(height: AppPadding.p12),
+                    Obx(
+                      () => LabeledTextField(
+                        label: "auth_password_label".tr,
+                        hint: "••••••••",
+                        obscureText: controller.obscurePassword.value,
+                        controller: controller.passwordController,
+                        keyboardType: TextInputType.visiblePassword,
+                        textInputAction: TextInputAction.done,
+                        validator: controller.validatePassword,
+                        icon: Assets.icons.passwordIcon.svg(
+                          width: 22,
+                          colorFilter: ColorFilter.mode(
+                            ColorManager.colorPrimary,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        suffixIcon: InkWell(
+                          onTap: controller.togglePasswordVisibility,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Icon(
+                              controller.obscurePassword.value
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 22,
+                              color: ColorManager.colorGrey6,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: AppSize.s8),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: TextButton(
-                      onPressed: controller.goToForgotPassword,
-                      child: Text(
-                        "auth_forgot_password".tr,
-                        style: Get.textTheme.bodyMedium,
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: TextButton(
+                        onPressed: controller.goToForgotPassword,
+                        child: Text(
+                          "auth_forgot_password".tr,
+                          style: TextStyle(
+                            fontSize: FontSize.s12,
+                            color: ColorManager.colorGrey6,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  Obx(
-                    () => AppButton(
-                      text: "auth_login_submit_button".tr,
-                      radius: 14,
-                      minHeight: 54,
-                      loadingMode:
-                          controller.loadingState.value == LoadingState.loading,
-                      onPressed: controller.login,
+                    Obx(
+                      () => AppButton(
+                        text: "auth_login_submit_button".tr,
+                        radius: 12,
+                        minHeight: 44,
+                        loadingMode:
+                            controller.loadingState.value ==
+                            LoadingState.loading,
+                        onPressed: controller.login,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: AppSize.s16),
-                  Center(
-                    child: TextButton(
-                      onPressed: controller.goToRegister,
-                      child: Text.rich(
-                        TextSpan(
-                          text: "auth_no_account_prefix".tr,
-                          style: Get.textTheme.bodyMedium,
-                          children: [
-                            TextSpan(
-                              text: "auth_create_account_button".tr,
-                              style: Get.textTheme.bodyMedium?.copyWith(
-                                color: ColorManager.colorPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    const SizedBox(height: AppPadding.p12),
+                    Center(
+                      child: TextButton(
+                        onPressed: controller.goToRegister,
+                        child: Text.rich(
+                          TextSpan(
+                            text: "auth_no_account_prefix".tr,
+                            style: TextStyle(
+                              fontSize: FontSize.s12,
+                              color: ColorManager.colorGrey6,
                             ),
-                          ],
+                            children: [
+                              TextSpan(
+                                text: "auth_create_account_button".tr,
+                                style: TextStyle(
+                                  fontSize: FontSize.s12,
+                                  color: ColorManager.colorPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Center(
-                    child: TextButton(
-                      onPressed: controller.continueAsGuest,
-                      child: Text(
-                        "guest_continue_button".tr,
-                        style: Get.textTheme.bodyMedium?.copyWith(
-                          color: ColorManager.colorDoveGray600,
+                    Center(
+                      child: TextButton(
+                        onPressed: controller.continueAsGuest,
+                        child: Text(
+                          "guest_continue_button".tr,
+                          style: TextStyle(
+                            fontSize: FontSize.s12,
+                            color: ColorManager.colorGrey6,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: AppSize.s24),
-                ],
+                    const SizedBox(height: AppPadding.p24),
+                  ],
+                ),
               ),
             ),
           ),
@@ -158,8 +178,8 @@ class _LogoBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: 130,
-        height: 130,
+        width: 110,
+        height: 110,
         child: Image.asset("assets/logo/LOGO_SAFRA.png", fit: BoxFit.contain),
       ),
     );

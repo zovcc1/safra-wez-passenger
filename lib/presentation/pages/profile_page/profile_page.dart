@@ -4,6 +4,7 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/segmented_toggle.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/user_avatar_widget.dart';
 import 'package:safraa_passenger_app/presentation/pages/profile_page/profile_page_controller.dart';
@@ -90,7 +91,7 @@ class ProfilePage extends GetView<ProfilePageController> {
                 () => _SettingsRow(
                   icon: Icons.dark_mode_outlined,
                   label: "profile_appearance".tr,
-                  trailing: _SegmentedToggle(
+                  trailing: SegmentedToggle(
                     options: [
                       ("light", "profile_theme_light".tr),
                       ("dark", "profile_theme_dark".tr),
@@ -471,25 +472,12 @@ class _AccountInfoBox extends StatelessWidget {
   }
 }
 
-/// فاصل غير مكتمل: يبدأ من نهاية الصف (الجهة اليسرى في RTL) ويغطي جزءاً منه.
+/// فاصل بين صفوف الكارد: نفس الفاصل المتلاشي الأطراف المستخدم بالكاردات.
 class _RowDivider extends StatelessWidget {
   const _RowDivider();
 
   @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: FractionallySizedBox(
-        widthFactor: 1.0,
-        child: Divider(
-          height: 1,
-          color: ColorManager.colorTextFieldEnabledBorder.withValues(
-            alpha: 0.4,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const TripCardDivider();
 }
 
 /// أيقونة صف مع خط قصير (غير مكتمل) يتمدد تحتها بحركة ناعمة عند الظهور.
@@ -602,7 +590,7 @@ class _LanguageRow extends StatelessWidget {
                   ),
                 ),
               ),
-              _SegmentedToggle(
+              SegmentedToggle(
                 options: [
                   ("ar", "profile_lang_arabic".tr),
                   ("en", "profile_lang_english".tr),
@@ -615,83 +603,6 @@ class _LanguageRow extends StatelessWidget {
         ),
         if (!isLast) const _RowDivider(),
       ],
-    );
-  }
-}
-
-class _SegmentedToggle extends StatelessWidget {
-  const _SegmentedToggle({
-    required this.options,
-    required this.selectedIndex,
-    required this.onChanged,
-  });
-
-  final List<(String, String)> options;
-  final int selectedIndex;
-  final void Function(String) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 150,
-      height: 34,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            alignment: AlignmentDirectional(selectedIndex == 0 ? -1 : 1, 0),
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              heightFactor: 1,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: ColorManager.colorWhite,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              for (var i = 0; i < options.length; i++)
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => onChanged(options[i].$1),
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: DefaultTextStyle.of(context).style.copyWith(
-                          fontSize: FontSize.s12,
-                          fontWeight: i == selectedIndex
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          color: i == selectedIndex
-                              ? ColorManager.colorPrimary
-                              : ColorManager.colorGrey6,
-                        ),
-                        child: Text(options[i].$2),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

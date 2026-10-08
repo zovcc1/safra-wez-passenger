@@ -255,13 +255,18 @@ class _NotificationTile extends StatelessWidget {
                   ),
                 ),
                 if (created != null) ...[
-                  const SizedBox(height: 6),
-                  TripCardChip(
-                    icon: Icons.schedule_outlined,
-                    color: ColorManager.colorGrey6,
-                    label:
-                        "${DateConverter.dateToStringAR(created)} "
-                        "${DateConverter.timeUTCToString(created)}",
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      "${DateConverter.dateToStringAR(created)} "
+                      "${DateConverter.timeUTCToString(created)}",
+                      style: TextStyle(
+                        fontSize: FontSize.s10,
+                        fontWeight: FontWeight.w300,
+                        color: ColorManager.colorGrey6.withValues(alpha: 0.8),
+                      ),
+                    ),
                   ),
                 ],
               ],

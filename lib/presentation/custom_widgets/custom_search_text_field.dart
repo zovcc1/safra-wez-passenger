@@ -38,7 +38,15 @@ class CustomSearchTextField extends StatelessWidget {
         ),
         suffixIcon: suffixIcon,
         prefixIcon: UnconstrainedBox(
-          child: Assets.icons.searchIcon.svg(width: 24, height: 24),
+          child: Assets.icons.searchIcon.svg(
+            width: 24,
+            height: 24,
+            // الـ SVG أسود ثابت، فنلوّنه حسب الثيم كي يظهر في الداكن.
+            colorFilter: ColorFilter.mode(
+              ColorManager.colorGrey6,
+              BlendMode.srcIn,
+            ),
+          ),
         ),
         contentPadding: const EdgeInsets.all(0),
         filled: true,

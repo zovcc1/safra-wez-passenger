@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:safraa_passenger_app/core/services/cache_service.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/guest_gate_widget.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
@@ -24,6 +25,9 @@ import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart
 class TripsPage extends GetView<TripsPageController> {
   const TripsPage({super.key});
 
+  /// المحتوى يمتد خلف شريط التنقل السفلي (extendBody) فنترك مسافة بقدره.
+  static const double _bottomNavInset = 48;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +42,7 @@ class TripsPage extends GetView<TripsPageController> {
               SliverToBoxAdapter(child: FadeSlideIn(child: _SearchForm())),
               SliverToBoxAdapter(
                 child: Padding(
+                  key: controller.resultsAnchorKey,
                   padding: const EdgeInsets.fromLTRB(
                     AppPadding.p16,
                     AppPadding.p8,
@@ -115,11 +120,14 @@ class TripsPage extends GetView<TripsPageController> {
     if (state == LoadingState.idle) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: FadeSlideIn(
-          child: EmptyStateWidget(
-            icon: Icons.travel_explore_outlined,
-            title: "trips_empty_search_title".tr,
-            subtitle: "trips_empty_search_subtitle".tr,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: _bottomNavInset),
+          child: FadeSlideIn(
+            child: EmptyStateWidget(
+              icon: Icons.travel_explore_outlined,
+              title: "trips_empty_search_title".tr,
+              subtitle: "trips_empty_search_subtitle".tr,
+            ),
           ),
         ),
       );
@@ -128,8 +136,11 @@ class TripsPage extends GetView<TripsPageController> {
     if (state == LoadingState.loading) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(
-          child: FadeSlideIn(offset: 8, child: AppLoader(size: 42)),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: _bottomNavInset),
+          child: Center(
+            child: FadeSlideIn(offset: 8, child: AppLoader(size: 42)),
+          ),
         ),
       );
     }
@@ -137,8 +148,13 @@ class TripsPage extends GetView<TripsPageController> {
     if (state == LoadingState.hasError) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: FadeSlideIn(
-          child: ErrorPlaceholderWidget(title: "trips_error_results_title".tr),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: _bottomNavInset),
+          child: FadeSlideIn(
+            child: ErrorPlaceholderWidget(
+              title: "trips_error_results_title".tr,
+            ),
+          ),
         ),
       );
     }
@@ -146,11 +162,14 @@ class TripsPage extends GetView<TripsPageController> {
     if (state == LoadingState.doneWithNoData) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: FadeSlideIn(
-          child: EmptyStateWidget(
-            icon: Icons.search_off_outlined,
-            title: "trips_no_results_title".tr,
-            subtitle: "trips_no_results_subtitle".tr,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: _bottomNavInset),
+          child: FadeSlideIn(
+            child: EmptyStateWidget(
+              icon: Icons.search_off_outlined,
+              title: "trips_no_results_title".tr,
+              subtitle: "trips_no_results_subtitle".tr,
+            ),
           ),
         ),
       );
@@ -161,7 +180,7 @@ class TripsPage extends GetView<TripsPageController> {
         AppPadding.p16,
         0,
         AppPadding.p16,
-        AppPadding.p24,
+        AppPadding.p24 + 64,
       ),
       sliver: SliverList.separated(
         itemCount:
@@ -583,17 +602,27 @@ class _SwapDividerState extends State<_SwapDivider> {
 
   @override
   Widget build(BuildContext context) {
-    final line = Expanded(
-      child: Divider(
+    // نفس فاصل الكاردات المتلاشي، لكن يخفت باتجاه الأطراف ويشتد قرب الزر.
+    final edge = ColorManager.colorTextFieldEnabledBorder;
+    Widget line({required bool fadeAtStart}) => Expanded(
+      child: Container(
         height: 1,
-        color: ColorManager.colorTextFieldEnabledBorder,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: AlignmentDirectional.centerStart,
+            end: AlignmentDirectional.centerEnd,
+            colors: fadeAtStart
+                ? [edge.withValues(alpha: 0), edge.withValues(alpha: 0.9)]
+                : [edge.withValues(alpha: 0.9), edge.withValues(alpha: 0)],
+          ),
+        ),
       ),
     );
     return SizedBox(
       height: 28,
       child: Row(
         children: [
-          line,
+          line(fadeAtStart: true),
           const SizedBox(width: 8),
           InkWell(
             onTap: () {
@@ -624,7 +653,7 @@ class _SwapDividerState extends State<_SwapDivider> {
             ),
           ),
           const SizedBox(width: 8),
-          line,
+          line(fadeAtStart: false),
         ],
       ),
     );
@@ -917,66 +946,51 @@ class _TripResultCard extends StatelessWidget {
     final eventTime = result.isOpenTrip
         ? result.expiresAt
         : result.departureTime;
-    final dateText = DateConverter.dateToStringAR(eventTime);
-    final timeText = DateConverter.timeUTCToString(eventTime);
+    final dateText = eventTime == null
+        ? "booking_details_no_date".tr
+        : "${result.isOpenTrip ? "${"booking_details_expires".tr} " : ""}"
+              "${DateFormat("EEEE d MMMM", "ar").format(eventTime)}";
     final showPickupChip =
         !result.isOpenTrip && result.pickupMode != PickupMode.fixedPoint;
 
-    return TripCardShell(
+    return CompactTripCard(
       onTap: () => _onTapResult(result),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: result.route.displayName,
+      badge: result.isOpenTrip
+          ? "trips_open_trip_badge".tr
+          : "trips_scheduled_trip_badge".tr,
+      badgeColor: badgeColor,
+      details: [
+        TextSpan(text: "$dateText · "),
+        CompactTripCard.strong(DateConverter.timeUTCToString(eventTime)),
+        TextSpan(
+          text:
+              " · ${"trips_seats_available_short".trParams({"seats": "${result.availableSeats}"})}",
+        ),
+      ],
+      price: Money.format(result.basePrice),
+      extra: Wrap(
+        spacing: 8,
+        runSpacing: 6,
         children: [
-          TripCardHeader(
-            title: result.route.displayName,
-            badge: result.isOpenTrip
-                ? "trips_open_trip_badge".tr
-                : "trips_scheduled_trip_badge".tr,
-            badgeColor: badgeColor,
+          TripCardChip(
+            icon: Icons.directions_car_outlined,
+            color: ColorManager.colorGrey6,
+            label: result.vehicle.vehicleType,
           ),
-          const SizedBox(height: 8),
-          TripInfoBox(
-            start: TripInfoItem(
-              icon: result.isOpenTrip
-                  ? Icons.hourglass_bottom_rounded
-                  : Icons.calendar_today_outlined,
-              title: result.isOpenTrip
-                  ? "trips_expires_at"
-                        .trParams({"date": dateText, "time": ""})
-                        .trim()
-                  : dateText,
-              subtitle: timeText,
+          if (showPickupChip)
+            TripCardChip(
+              icon: result.pickupMode == PickupMode.doorToDoor
+                  ? Icons.home_outlined
+                  : Icons.location_on_outlined,
+              color: ColorManager.colorPrimary,
+              label: result.pickupMode == PickupMode.doorToDoor
+                  ? "pickup_mode_door_to_door".tr
+                  : "pickup_mode_collection_points".trParams({
+                      "count": "${result.collectionPoints.length}",
+                    }),
             ),
-            end: TripInfoItem(
-              icon: Icons.directions_car_outlined,
-              title: "trips_seats_available_short".trParams({
-                "seats": "${result.availableSeats}",
-              }),
-              subtitle: result.vehicle.vehicleType,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              if (showPickupChip)
-                TripCardChip(
-                  icon: result.pickupMode == PickupMode.doorToDoor
-                      ? Icons.home_outlined
-                      : Icons.location_on_outlined,
-                  color: ColorManager.colorPrimary,
-                  label: result.pickupMode == PickupMode.doorToDoor
-                      ? "pickup_mode_door_to_door".tr
-                      : "pickup_mode_collection_points".trParams({
-                          "count": "${result.collectionPoints.length}",
-                        }),
-                ),
-              _ProviderRatingPill(result: result),
-            ],
-          ),
-          const SizedBox(height: 6),
-          TripCardFooter(price: Money.format(result.basePrice)),
+          _ProviderRatingPill(result: result),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
+import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
 
 /// أجزاء مشتركة لكاردات الرحلات والحجوزات (نفس التصميم والمسافات).
 
@@ -248,12 +249,7 @@ class TripCardFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Divider(
-          height: 1,
-          color: ColorManager.colorTextFieldEnabledBorder.withValues(
-            alpha: 0.4,
-          ),
-        ),
+        const TripCardDivider(),
         const SizedBox(height: 6),
         Row(
           children: [
@@ -291,6 +287,206 @@ class TripCardArrow extends StatelessWidget {
         Icons.arrow_forward_ios_rounded,
         size: 12,
         color: ColorManager.colorGrey6,
+      ),
+    );
+  }
+}
+
+/// فاصل متلاشي الأطراف بدل خط كامل حاد.
+class TripCardDivider extends StatelessWidget {
+  const TripCardDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final line = ColorManager.colorTextFieldEnabledBorder;
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            line.withValues(alpha: 0),
+            line.withValues(alpha: 0.7),
+            line.withValues(alpha: 0),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TripStripCell {
+  const TripStripCell({required this.icon, required this.text, this.flex = 1});
+
+  final IconData icon;
+  final String text;
+  final int flex;
+}
+
+/// شريط معلومات مدمج: خلايا متجاورة (أيقونة + نص صغير) بينها فواصل رفيعة.
+class TripInfoStrip extends StatelessWidget {
+  const TripInfoStrip({super.key, required this.cells});
+
+  final List<TripStripCell> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: BoxDecoration(
+        color: ColorManager.colorBackground.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (var i = 0; i < cells.length; i++) ...[
+              if (i > 0)
+                Container(
+                  width: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  color: ColorManager.colorTextFieldEnabledBorder.withValues(
+                    alpha: 0.6,
+                  ),
+                ),
+              Expanded(
+                flex: cells[i].flex,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      cells[i].icon,
+                      size: 13,
+                      color: ColorManager.colorGrey6,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        cells[i].text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: FontSize.s10_5,
+                          color: ColorManager.colorDoveGray600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// كارد مدمج من سطرين (عنوان + شارة، ثم تفاصيل + سعر) يوحّد شكل الحجوزات
+/// وطلبات الدفع والتأشيرات. [extra] سطر اختياري تحت السطرين.
+class CompactTripCard extends StatelessWidget {
+  const CompactTripCard({
+    super.key,
+    required this.onTap,
+    required this.title,
+    required this.badge,
+    required this.badgeColor,
+    required this.details,
+    required this.price,
+    this.priceVoided = false,
+    this.extra,
+  });
+
+  final VoidCallback? onTap;
+  final String title;
+  final String badge;
+  final Color badgeColor;
+  final List<InlineSpan> details;
+  final String price;
+
+  /// السعر مشطوب ورمادي (حجز ملغى أو لم يحضر).
+  final bool priceVoided;
+  final Widget? extra;
+
+  /// نص الشارة بدرجة أعمق من خلفيتها لتباين أوضح.
+  static Color deepen(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness((hsl.lightness * 0.72).clamp(0.0, 1.0)).toColor();
+  }
+
+  /// جزء بارز (الوقت مثلًا) داخل سطر التفاصيل.
+  static TextSpan strong(String text) => TextSpan(
+    text: text,
+    style: TextStyle(
+      fontWeight: FontWeight.w700,
+      color: ColorManager.colorFontPrimary,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final grey = ColorManager.colorGrey6;
+    return TripCardShell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: FontSize.s16,
+                    fontWeight: FontWeight.w600,
+                    color: ColorManager.colorFontPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontSize: FontSize.s11,
+                    fontWeight: FontWeight.w600,
+                    color: deepen(badgeColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: details),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: FontSize.s14, color: grey),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                price,
+                style: TextStyle(
+                  fontSize: FontSize.s16,
+                  fontWeight: FontWeight.w700,
+                  color: priceVoided ? grey : ColorManager.colorFontPrimary,
+                  decoration: priceVoided ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ],
+          ),
+          if (extra != null) ...[const SizedBox(height: 6), extra!],
+        ],
       ),
     );
   }

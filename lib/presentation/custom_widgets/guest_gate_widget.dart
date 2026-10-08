@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:safraa_passenger_app/core/app_config/app_translation.dart';
 import 'package:safraa_passenger_app/core/services/theme_controller.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/segmented_toggle.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/navigation_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
@@ -50,8 +52,9 @@ class GuestGateWidget extends StatelessWidget {
               Text(
                 "guest_gate_title".tr,
                 textAlign: TextAlign.center,
-                style: Get.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  fontSize: FontSize.s16,
+                  fontWeight: FontWeight.w500,
                   color: ColorManager.colorFontPrimary,
                 ),
               ),
@@ -83,13 +86,14 @@ class GuestGateWidget extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _IconBadge(icon: icon, size: 96),
+                _IconBadge(icon: icon, size: 80),
                 const SizedBox(height: AppPadding.p20),
                 Text(
                   titleKey.tr,
                   textAlign: TextAlign.center,
-                  style: Get.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: TextStyle(
+                    fontSize: FontSize.s16,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
@@ -97,8 +101,10 @@ class GuestGateWidget extends StatelessWidget {
                 Text(
                   subtitleKey.tr,
                   textAlign: TextAlign.center,
-                  style: Get.textTheme.bodySmall?.copyWith(
-                    color: ColorManager.colorDoveGray600,
+                  style: TextStyle(
+                    fontSize: FontSize.s12,
+                    height: 1.5,
+                    color: ColorManager.colorGrey6,
                   ),
                 ),
                 const SizedBox(height: AppPadding.p24),
@@ -129,7 +135,7 @@ class _IconBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: ColorManager.colorPrimary.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(size * 0.3),
       ),
       child: Icon(icon, size: size * 0.45, color: ColorManager.colorPrimary),
     );
@@ -145,15 +151,15 @@ class _AuthButtons extends StatelessWidget {
       children: [
         AppButton(
           text: "auth_login_button".tr,
-          radius: 14,
-          minHeight: 52,
+          radius: 12,
+          minHeight: 44,
           onPressed: GuestGateWidget.goToLogin,
         ),
         const SizedBox(height: AppPadding.p12),
         AppButton(
           text: "auth_create_account_button".tr,
-          radius: 14,
-          minHeight: 52,
+          radius: 12,
+          minHeight: 44,
           backgroundColor: ColorManager.colorWhite,
           fontColor: ColorManager.colorPrimary,
           border: Border.all(color: ColorManager.colorPrimary),
@@ -171,40 +177,86 @@ class _GuestSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Get.find<ThemeController>();
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: ColorManager.colorWhite,
-        borderRadius: BorderRadius.circular(AppPadding.p16),
+        borderRadius: BorderRadius.circular(AppSize.s16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Obx(
-            () => SwitchListTile(
-              secondary: Icon(
-                Icons.dark_mode_outlined,
-                color: ColorManager.colorPrimary,
+            () => _SettingRow(
+              icon: Icons.dark_mode_outlined,
+              label: "profile_appearance".tr,
+              trailing: SegmentedToggle(
+                options: [
+                  ("light", "profile_theme_light".tr),
+                  ("dark", "profile_theme_dark".tr),
+                ],
+                selectedIndex: theme.isDarkMode.value ? 1 : 0,
+                onChanged: (mode) {
+                  if ((mode == "dark") != theme.isDarkMode.value) {
+                    theme.toggleTheme();
+                  }
+                },
               ),
-              title: Text("profile_dark_mode".tr),
-              value: theme.isDarkMode.value,
-              onChanged: (_) => theme.toggleTheme(),
             ),
           ),
-          Divider(
-            height: 1,
-            color: ColorManager.colorGrey6.withValues(alpha: 0.3),
-          ),
-          ListTile(
-            leading: Icon(Icons.language, color: ColorManager.colorPrimary),
-            title: Text("profile_language".tr),
-            trailing: Text(
-              AppTranslations.isArabic
-                  ? "profile_lang_english".tr
-                  : "profile_lang_arabic".tr,
-              style: TextStyle(color: ColorManager.colorPrimary),
-            ),
-            onTap: () => AppTranslations.changeLocale(
-              AppTranslations.isArabic ? 'en' : 'ar',
+          const TripCardDivider(),
+          _SettingRow(
+            icon: Icons.language_outlined,
+            label: "profile_language".tr,
+            trailing: SegmentedToggle(
+              options: [
+                ("ar", "profile_lang_arabic".tr),
+                ("en", "profile_lang_english".tr),
+              ],
+              selectedIndex: AppTranslations.isArabic ? 0 : 1,
+              onChanged: AppTranslations.changeLocale,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingRow extends StatelessWidget {
+  const _SettingRow({
+    required this.icon,
+    required this.label,
+    required this.trailing,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppPadding.p8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: ColorManager.colorGrey6),
+          const SizedBox(width: AppPadding.p12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: FontSize.s13,
+                color: ColorManager.colorFontPrimary,
+              ),
+            ),
+          ),
+          trailing,
         ],
       ),
     );

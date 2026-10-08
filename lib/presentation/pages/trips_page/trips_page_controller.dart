@@ -23,6 +23,9 @@ class TripsPageController extends GetxController {
 
   final scrollController = ScrollController();
 
+  /// مرساة بداية قسم النتائج: يتمرّر إليها بعد كل بحث ناجح.
+  final resultsAnchorKey = GlobalKey();
+
   final governoratesLoadingState = LoadingState.idle.obs;
   final governorates = <GovernorateModel>[].obs;
 
@@ -150,6 +153,19 @@ class TripsPageController extends GetxController {
     results.clear();
 
     await _fetch();
+    if (results.isNotEmpty) _scrollToResults();
+  }
+
+  void _scrollToResults() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final anchor = resultsAnchorKey.currentContext;
+      if (anchor == null) return;
+      Scrollable.ensureVisible(
+        anchor,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeInOutCubic,
+      );
+    });
   }
 
   Future<void> loadMore() async {

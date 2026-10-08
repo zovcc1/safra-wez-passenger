@@ -4,8 +4,9 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/pickup_models.dart';
 import 'package:safraa_passenger_app/data/models/trip_search_result_model.dart';
 import 'package:safraa_passenger_app/data/models/trip_seat_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
 import 'package:safraa_passenger_app/presentation/pages/create_booking_page/create_booking_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
@@ -23,102 +24,104 @@ class CreateBookingPage extends GetView<CreateBookingPageController> {
     final priceValue = double.tryParse(result.basePrice) ?? 0;
 
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(
         title: "create_booking_confirm_button".tr,
         backIcon: true,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.refreshSeats,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppPadding.p16),
-            children: [
-              _SummaryCard(result: result),
-              const SizedBox(height: AppPadding.p12),
-              _SectionCard(
-                icon: Icons.event_seat_outlined,
-                title: "trips_seats_label".tr,
-                child: result.isOpenTrip
-                    ? Obx(
-                        () => _SeatsStepper(
-                          value: controller.seatsCount.value,
-                          max: result.availableSeats,
-                          onChanged: controller.setSeatsCount,
-                        ),
-                      )
-                    : const _SeatPicker(),
-              ),
-              const SizedBox(height: AppPadding.p12),
-              if (controller.pickupMode != PickupMode.fixedPoint) ...[
-                const _PickupSection(),
-                const SizedBox(height: AppPadding.p12),
-              ],
-              _SectionCard(
-                icon: Icons.payments_outlined,
-                title: "create_booking_payment_method_title".tr,
-                child: Column(
-                  children: [
-                    Obx(
-                      () => _PaymentMethodOption(
-                        label: "create_booking_payment_wallet".tr,
-                        icon: Icons.account_balance_wallet_outlined,
-                        selected: controller.paymentMethod.value == "wallet",
-                        onTap: () => controller.setPaymentMethod("wallet"),
-                      ),
-                    ),
-                    Obx(
-                      () => _PaymentMethodOption(
-                        label: "create_booking_payment_cod".tr,
-                        icon: Icons.payments_outlined,
-                        selected:
-                            controller.paymentMethod.value ==
-                            "cash_on_delivery",
-                        onTap: () =>
-                            controller.setPaymentMethod("cash_on_delivery"),
-                      ),
-                    ),
-                  ],
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.refreshSeats,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppPadding.p16),
+              children: [
+                _SummaryCard(result: result),
+                const SizedBox(height: AppPadding.p8),
+                _SectionCard(
+                  icon: Icons.event_seat_outlined,
+                  title: "trips_seats_label".tr,
+                  child: result.isOpenTrip
+                      ? Obx(
+                          () => _SeatsStepper(
+                            value: controller.seatsCount.value,
+                            max: result.availableSeats,
+                            onChanged: controller.setSeatsCount,
+                          ),
+                        )
+                      : const _SeatPicker(),
                 ),
-              ),
-              const SizedBox(height: AppPadding.p12),
-              Obx(() {
-                final total = priceValue * controller.selectedSeatsQuantity;
-                return _CardShell(
-                  child: Row(
+                const SizedBox(height: AppPadding.p8),
+                if (controller.pickupMode != PickupMode.fixedPoint) ...[
+                  const _PickupSection(),
+                  const SizedBox(height: AppPadding.p8),
+                ],
+                _SectionCard(
+                  icon: Icons.payments_outlined,
+                  title: "create_booking_payment_method_title".tr,
+                  child: Column(
                     children: [
-                      Text(
-                        "create_booking_total_label".tr,
-                        style: TextStyle(
-                          fontSize: FontSize.s14,
-                          color: ColorManager.colorGrey6,
+                      Obx(
+                        () => _PaymentMethodOption(
+                          label: "create_booking_payment_wallet".tr,
+                          icon: Icons.account_balance_wallet_outlined,
+                          selected: controller.paymentMethod.value == "wallet",
+                          onTap: () => controller.setPaymentMethod("wallet"),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        Money.format(total.toString()),
-                        style: TextStyle(
-                          fontSize: FontSize.s16,
-                          fontWeight: FontWeight.bold,
-                          color: ColorManager.colorPrimary,
+                      Obx(
+                        () => _PaymentMethodOption(
+                          label: "create_booking_payment_cod".tr,
+                          icon: Icons.payments_outlined,
+                          selected:
+                              controller.paymentMethod.value ==
+                              "cash_on_delivery",
+                          onTap: () =>
+                              controller.setPaymentMethod("cash_on_delivery"),
                         ),
                       ),
                     ],
                   ),
-                );
-              }),
-              const SizedBox(height: AppPadding.p12),
-              Obx(
-                () => AppButton(
-                  text: "create_booking_confirm_button".tr,
-                  radius: 12,
-                  minHeight: 42,
-                  loadingMode: controller.submitting.value,
-                  onPressed: controller.submit,
                 ),
-              ),
-            ],
+                const SizedBox(height: AppPadding.p8),
+                Obx(() {
+                  final total = priceValue * controller.selectedSeatsQuantity;
+                  return _CardShell(
+                    child: Row(
+                      children: [
+                        Text(
+                          "create_booking_total_label".tr,
+                          style: TextStyle(
+                            fontSize: FontSize.s13,
+                            color: ColorManager.colorGrey6,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          Money.format(total.toString()),
+                          style: TextStyle(
+                            fontSize: FontSize.s15,
+                            fontWeight: FontWeight.w500,
+                            color: ColorManager.colorPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: AppPadding.p8),
+                Obx(
+                  () => AppButton(
+                    text: "create_booking_confirm_button".tr,
+                    radius: 12,
+                    minHeight: 42,
+                    loadingMode: controller.submitting.value,
+                    onPressed: controller.submit,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -136,7 +139,7 @@ class _CardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -145,7 +148,7 @@ class _CardShell extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -176,14 +179,22 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: AppSize.s20, color: ColorManager.colorPrimary),
-              const SizedBox(width: 8),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: ColorManager.colorPrimary),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontSize: FontSize.s15,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorFontPrimary,
                   ),
                 ),
@@ -218,76 +229,48 @@ class _SummaryCard extends StatelessWidget {
     final badgeColor = result.isOpenTrip
         ? ColorManager.colorOrange
         : ColorManager.colorPrimary;
-    final timeText = result.isOpenTrip
+    final eventTime = result.isOpenTrip
+        ? result.expiresAt
+        : result.departureTime;
+    final dateText = result.isOpenTrip
         ? "trips_expires_at".trParams({
-            "date": DateConverter.dateToStringAR(result.expiresAt),
-            "time": DateConverter.timeUTCToString(result.expiresAt),
-          })
-        : "trips_departure_at".trParams({
-            "date": DateConverter.dateToStringAR(result.departureTime),
-            "time": DateConverter.timeUTCToString(result.departureTime),
-          });
+            "date": DateConverter.dateToStringAR(eventTime),
+            "time": "",
+          }).trim()
+        : DateConverter.dateToStringAR(eventTime);
     return _CardShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.route_outlined,
-                size: AppSize.s20,
-                color: ColorManager.colorPrimary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  result.route.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s15,
-                    fontWeight: FontWeight.bold,
-                    color: ColorManager.colorFontPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  result.isOpenTrip
-                      ? "trips_open_trip_badge".tr
-                      : "trips_scheduled_trip_badge".tr,
-                  style: TextStyle(
-                    fontSize: FontSize.s10_5,
-                    fontWeight: FontWeight.bold,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
+          TripCardHeader(
+            title: result.route.displayName,
+            badge: result.isOpenTrip
+                ? "trips_open_trip_badge".tr
+                : "trips_scheduled_trip_badge".tr,
+            badgeColor: badgeColor,
           ),
           const SizedBox(height: AppPadding.p8),
-          Wrap(
-            spacing: AppPadding.p8,
-            runSpacing: AppPadding.p8,
-            children: [
-              InfoPill(
+          TripInfoStrip(
+            cells: [
+              TripStripCell(
+                flex: 5,
+                icon: result.isOpenTrip
+                    ? Icons.hourglass_bottom_rounded
+                    : Icons.calendar_today_rounded,
+                text: dateText,
+              ),
+              TripStripCell(
+                flex: 3,
+                icon: Icons.access_time_rounded,
+                text: DateConverter.timeUTCToString(eventTime),
+              ),
+              TripStripCell(
+                flex: 5,
                 icon: Icons.directions_car_outlined,
                 text: "trips_result_seats_available".trParams({
                   "vehicleType": result.vehicle.vehicleType,
                   "seats": "${result.availableSeats}",
                 }),
-              ),
-              InfoPill(
-                icon: result.isOpenTrip
-                    ? Icons.hourglass_bottom_outlined
-                    : Icons.schedule_outlined,
-                text: timeText,
               ),
             ],
           ),
@@ -396,13 +379,13 @@ class _SeatChip extends StatelessWidget {
     final Color background;
     final Color foreground;
     if (!seat.isAvailable) {
-      background = ColorManager.colorBackground;
+      background = ColorManager.colorBackground.withValues(alpha: 0.7);
       foreground = ColorManager.colorDoveGray300;
     } else if (selected) {
       background = ColorManager.colorPrimary;
       foreground = Colors.white;
     } else {
-      background = ColorManager.colorBackground;
+      background = ColorManager.colorWhite;
       foreground = ColorManager.colorFontPrimary;
     }
 
@@ -418,12 +401,17 @@ class _SeatChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? ColorManager.colorPrimary
+                : ColorManager.colorTextFieldEnabledBorder,
+          ),
         ),
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 180),
           style: DefaultTextStyle.of(context).style.copyWith(
             fontSize: FontSize.s12,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: foreground,
           ),
           child: Text(seat.seatNumber),
@@ -452,8 +440,9 @@ class _SeatsStepper extends StatelessWidget {
           height: 38,
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: ColorManager.colorBackground,
+            color: ColorManager.colorWhite,
             borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -474,7 +463,7 @@ class _SeatsStepper extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: FontSize.s14,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       color: ColorManager.colorPrimary,
                     ),
                   ),
@@ -563,10 +552,12 @@ class _PaymentMethodOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? ColorManager.colorPrimary.withValues(alpha: 0.08)
-              : ColorManager.colorBackground,
+              : ColorManager.colorWhite,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? ColorManager.colorPrimary : Colors.transparent,
+            color: selected
+                ? ColorManager.colorPrimary
+                : ColorManager.colorTextFieldEnabledBorder,
           ),
         ),
         child: Row(
@@ -584,7 +575,7 @@ class _PaymentMethodOption extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: FontSize.s13,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
                   color: selected
                       ? ColorManager.colorPrimary
                       : ColorManager.colorFontPrimary,
@@ -675,8 +666,9 @@ class _PickupSection extends GetView<CreateBookingPageController> {
             text: picked == null
                 ? "create_booking_pickup_choose".tr
                 : "create_booking_pickup_change".tr,
-            backgroundColor: ColorManager.colorBackground,
+            backgroundColor: ColorManager.colorWhite,
             fontColor: ColorManager.colorFontPrimary,
+            border: Border.all(color: ColorManager.colorTextFieldEnabledBorder),
             radius: 12,
             minHeight: 40,
             onPressed: controller.pickOnMap,

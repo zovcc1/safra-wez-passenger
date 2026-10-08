@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:safraa_passenger_app/core/services/places_search_service.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/custom_text_field.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
@@ -8,6 +9,24 @@ import 'package:safraa_passenger_app/presentation/pages/pickup_picker_page/picku
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/values_manager.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_loader.dart';
+
+/// ستايل خريطة داكن ليتناسق مع الوضع الداكن (بدل الخريطة الفاتحة).
+const String _kDarkMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#1d2330"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#9aa4b5"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#1d2330"}]},
+  {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#3a4358"}]},
+  {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#8b95a8"}]},
+  {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#1f3a33"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#2c3547"}]},
+  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#1d2330"}]},
+  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#3b4660"}]},
+  {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#262e3f"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0f1520"}]},
+  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#5d6a82"}]}
+]
+''';
 
 class PickupPickerPage extends GetView<PickupPickerPageController> {
   const PickupPickerPage({super.key});
@@ -29,6 +48,9 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                     final type = controller.mapType.value;
                     return GoogleMap(
                       mapType: type,
+                      style: ColorManager.isDark && type == MapType.normal
+                          ? _kDarkMapStyle
+                          : null,
                       initialCameraPosition: CameraPosition(
                         target: controller.initialTarget,
                         zoom: 13,
@@ -47,12 +69,6 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                     );
                   }),
                   const IgnorePointer(child: Center(child: _CenterPin())),
-                  PositionedDirectional(
-                    top: AppSize.s12,
-                    start: AppSize.s12,
-                    end: AppSize.s12,
-                    child: _SearchBar(controller: controller),
-                  ),
                   PositionedDirectional(
                     top: AppSize.s12 + 56,
                     start: AppPadding.p12,
@@ -112,25 +128,6 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                       children: [
                         _MapTypeButton(controller: controller),
                         SizedBox(height: AppSize.s8),
-                        _MapControlCard(
-                          children: [
-                            _MapIconButton(
-                              icon: Icons.add_rounded,
-                              onPressed: () => controller.zoomBy(1),
-                            ),
-                            Divider(
-                              height: 1,
-                              indent: 8,
-                              endIndent: 8,
-                              color: ColorManager.colorDivider,
-                            ),
-                            _MapIconButton(
-                              icon: Icons.remove_rounded,
-                              onPressed: () => controller.zoomBy(-1),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: AppSize.s8),
                         Obx(
                           () => _MapControlCard(
                             children: [
@@ -145,9 +142,54 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                       ],
                     ),
                   ),
+                  Positioned.fill(
+                    child: Obx(() {
+                      final focused = controller.searchExpanded;
+                      final bar = _SearchBar(
+                        key: controller.searchBarKey,
+                        controller: controller,
+                        expanded: focused,
+                      );
+                      if (!focused) {
+                        return Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: EdgeInsets.all(AppSize.s12),
+                            child: bar,
+                          ),
+                        );
+                      }
+                      return Container(
+                        color: ColorManager.colorBackground,
+                        padding: EdgeInsets.all(AppSize.s12),
+                        child: bar,
+                      );
+                    }),
+                  ),
                 ],
               ),
             ),
+            Obx(
+              () => controller.searchExpanded
+                  ? const SizedBox.shrink()
+                  : _BottomPanel(controller: controller),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomPanel extends StatelessWidget {
+  const _BottomPanel({required this.controller});
+
+  final PickupPickerPageController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
             Container(
               decoration: BoxDecoration(
                 color: ColorManager.colorWhite,
@@ -170,33 +212,15 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.touch_app_rounded,
-                            size: 16,
-                            color: ColorManager.colorDoveGray600,
-                          ),
-                          SizedBox(width: AppSize.s6),
-                          Expanded(
-                            child: Text(
-                              "pickup_picker_hint".tr,
-                              style: Get.textTheme.labelSmall?.copyWith(
-                                color: ColorManager.colorDoveGray600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _SelectedPlace(controller: controller),
                       SizedBox(height: AppSize.s12),
                       CustomTextField(
-                        title: "pickup_picker_address_hint".tr,
+                        title: "pickup_picker_note_title".tr,
                         hint: "pickup_picker_address_hint".tr,
                         textEditingController: controller.addressController,
                         textInputType: TextInputType.streetAddress,
                         fillColor: ColorManager.colorBackground,
                         borderRadius: 14,
-                        onChanged: controller.onAddressEdited,
                       ),
                       SizedBox(height: AppSize.s14),
                       AppButton(
@@ -210,11 +234,111 @@ class PickupPickerPage extends GetView<PickupPickerPageController> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+      ],
     );
   }
+}
+
+/// اسم المكان المختار بخط كبير أعلى اللوحة، تحته المنطقة وحالة الخدمة.
+class _SelectedPlace extends StatelessWidget {
+  const _SelectedPlace({required this.controller});
+
+  final PickupPickerPageController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final title = controller.placeTitle.value;
+      final region = controller.placeRegion.value;
+      final inService = controller.inServiceArea;
+      final statusColor = inService == true
+          ? ColorManager.colorGreen3
+          : ColorManager.colorError300;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.isEmpty ? "pickup_place_unknown".tr : title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: FontSize.s20,
+              fontWeight: FontWeight.w600,
+              color: ColorManager.colorFontPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (region.isNotEmpty)
+            Text(
+              region,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: FontSize.s13,
+                height: 1.4,
+                color: ColorManager.colorGrey6,
+              ),
+            ),
+          if (inService != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  inService
+                      ? "pickup_service_inside".tr
+                      : "pickup_service_outside".tr,
+                  style: TextStyle(
+                    fontSize: FontSize.s13,
+                    fontWeight: FontWeight.w500,
+                    color: statusColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _DashedCirclePainter extends CustomPainter {
+  _DashedCirclePainter({required this.color, required this.fillColor});
+
+  final Color color;
+  final Color fillColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 1.6;
+    const dashes = 28;
+    final center = size.center(Offset.zero);
+    final radius = size.width / 2 - strokeWidth;
+    canvas.drawCircle(center, radius, Paint()..color = fillColor);
+    final stroke = Paint()
+      ..color = color.withValues(alpha: 0.75)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    const sweep = 2 * 3.141592653589793 / dashes;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    for (var i = 0; i < dashes; i++) {
+      canvas.drawArc(rect, i * sweep, sweep * 0.55, false, stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedCirclePainter old) =>
+      old.color != color || old.fillColor != fillColor;
 }
 
 class _CenterPin extends StatelessWidget {
@@ -222,14 +346,22 @@ class _CenterPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double size = 44;
+    const double size = 30;
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
+        // دائرة حول رأس الدبوس تتحرك معه (حجمها ثابت بالبكسل).
+        CustomPaint(
+          size: const Size(72, 72),
+          painter: _DashedCirclePainter(
+            color: ColorManager.colorPrimary,
+            fillColor: ColorManager.colorPrimary.withValues(alpha: 0.12),
+          ),
+        ),
         Container(
-          width: 10,
-          height: 5,
+          width: 6,
+          height: 3,
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(5),
@@ -250,14 +382,22 @@ class _CenterPin extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller});
+  const _SearchBar({
+    super.key,
+    required this.controller,
+    this.expanded = false,
+  });
 
   final PickupPickerPageController controller;
+
+  /// أثناء البحث تملأ القائمة الشاشة بدل أن تطفو فوق الخريطة.
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       children: [
         Material(
           elevation: 4,
@@ -304,67 +444,111 @@ class _SearchBar extends StatelessWidget {
               controller.searchedOnce.value &&
               !controller.searching.value &&
               results.isEmpty;
-          if (results.isEmpty && !empty) return const SizedBox.shrink();
+          // تظهر القائمة عند التركيز (فيها "استخدم موقعي الحالي") أو عند وجود نتائج.
+          final focused = controller.searchFocused.value;
+          if (!focused && results.isEmpty && !empty) {
+            return const SizedBox.shrink();
+          }
 
+          final list = ListView(
+            shrinkWrap: !expanded,
+            padding: EdgeInsets.zero,
+            children: [
+              if (focused) ...[
+                ListTile(
+                  leading: Icon(
+                    Icons.my_location_rounded,
+                    color: ColorManager.colorPrimary,
+                  ),
+                  title: Text(
+                    "pickup_use_my_location".tr,
+                    style: Get.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: ColorManager.colorPrimary,
+                    ),
+                  ),
+                  onTap: controller.useMyLocationFromSearch,
+                ),
+                Divider(height: 1, color: ColorManager.colorDivider),
+              ],
+              if (empty)
+                Padding(
+                  padding: EdgeInsets.all(AppSize.s14),
+                  child: Text(
+                    "pickup_no_results".tr,
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      color: ColorManager.colorDoveGray600,
+                    ),
+                  ),
+                ),
+              for (var i = 0; i < results.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: ColorManager.colorDivider),
+                _ResultTile(
+                  result: results[i],
+                  onTap: () => controller.selectResult(results[i]),
+                ),
+              ],
+            ],
+          );
+
+          // Material (لا Container ملوّن) كي تظهر خلفية/تموّج الـ ListTile.
+          final card = Material(
+            elevation: 4,
+            color: ColorManager.colorWhite,
+            borderRadius: BorderRadius.circular(AppSize.s14),
+            clipBehavior: Clip.antiAlias,
+            child: list,
+          );
+          if (expanded) {
+            return Flexible(
+              child: Padding(
+                padding: EdgeInsets.only(top: AppSize.s6),
+                child: Align(alignment: Alignment.topCenter, child: card),
+              ),
+            );
+          }
           return Container(
             margin: EdgeInsets.only(top: AppSize.s6),
             constraints: BoxConstraints(maxHeight: AppSize.sHeight * 0.3),
-            decoration: BoxDecoration(
-              color: ColorManager.colorWhite,
-              borderRadius: BorderRadius.circular(AppSize.s14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: empty
-                ? Padding(
-                    padding: EdgeInsets.all(AppSize.s14),
-                    child: Text(
-                      "pickup_no_results".tr,
-                      style: Get.textTheme.bodySmall?.copyWith(
-                        color: ColorManager.colorDoveGray600,
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: results.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: ColorManager.colorDivider),
-                    itemBuilder: (context, index) => ListTile(
-                      dense: true,
-                      leading: Icon(
-                        Icons.place_outlined,
-                        color: ColorManager.colorPrimary,
-                      ),
-                      title: Text(
-                        results[index].title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Get.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: results[index].subtitle.isEmpty
-                          ? null
-                          : Text(
-                              results[index].subtitle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Get.textTheme.bodySmall?.copyWith(
-                                color: ColorManager.colorDoveGray600,
-                              ),
-                            ),
-                      onTap: () => controller.selectResult(results[index]),
-                    ),
-                  ),
+            child: card,
           );
         }),
       ],
+    );
+  }
+}
+
+class _ResultTile extends StatelessWidget {
+  const _ResultTile({required this.result, required this.onTap});
+
+  final PlaceSuggestion result;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // السطر الثاني لا يكرر الأول (مثل "رجوب / رجوب").
+    final subtitle = result.subtitle.trim();
+    final showSubtitle = subtitle.isNotEmpty && subtitle != result.title.trim();
+    return ListTile(
+      dense: true,
+      leading: Icon(Icons.place_outlined, color: ColorManager.colorPrimary),
+      title: Text(
+        result.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Get.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: showSubtitle
+          ? Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Get.textTheme.bodySmall?.copyWith(
+                color: ColorManager.colorDoveGray600,
+              ),
+            )
+          : null,
+      onTap: onTap,
     );
   }
 }

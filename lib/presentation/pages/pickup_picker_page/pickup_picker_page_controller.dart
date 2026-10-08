@@ -32,6 +32,17 @@ class PickupPickerPageController extends GetxController {
   final searching = false.obs;
   final searchResults = <PlaceSuggestion>[].obs;
   final searchedOnce = false.obs;
+
+  /// البحث نشط (حقل البحث عليه التركيز): تتحول الشاشة لقائمة كاملة.
+  final searchFocused = false.obs;
+
+  /// القائمة بحجم الصفحة فقط عندما يوجد ما يُعرض (نتائج أو "لا نتائج"): قائمة
+  /// فارغة لا تغطي الخريطة.
+  bool get searchExpanded =>
+      searchFocused.value && (searchResults.isNotEmpty || searchedOnce.value);
+
+  /// يحفظ حالة حقل البحث عند تبديل الشاشة بين الوضع المصغّر والموسّع.
+  final searchBarKey = GlobalKey();
   final mapType = MapType.normal.obs;
 
   final PlacesSearchService _places = PlacesSearchService();
@@ -39,8 +50,10 @@ class PickupPickerPageController extends GetxController {
   Timer? _reverseDebounce;
   int _searchSeq = 0;
 
-  /// عنوان كُتب تلقائيًا من الخريطة (يُستبدل عند التحريك)، لا ما كتبه المستخدم.
-  bool _addressAutoFilled = false;
+  /// المكان المختار (من الخريطة أو البحث): الاسم ثم المنطقة. أما
+  /// [addressController] فصار ملاحظة يكتبها الراكب للسائق.
+  final placeTitle = "".obs;
+  final placeRegion = "".obs;
 
   String get _lang => Get.locale?.languageCode ?? "ar";
 
@@ -63,13 +76,14 @@ class PickupPickerPageController extends GetxController {
     final initial = args["initial"] as BookingPickupModel?;
     if (initial != null && initial.hasCoordinates) {
       center.value = LatLng(initial.latitude!, initial.longitude!);
-      addressController.text = initial.address ?? "";
+      placeTitle.value = initial.address ?? "";
     } else if (startPoint != null) {
       center.value = LatLng(startPoint!.latitude, startPoint!.longitude);
     } else {
       center.value = _fallbackCenter;
     }
     _initialTarget = center.value!;
+    searchFocus.addListener(() => searchFocused.value = searchFocus.hasFocus);
     _loadRoutes();
   }
 
@@ -100,33 +114,33 @@ class PickupPickerPageController extends GetxController {
 
   void onCameraMoveStarted() => searchFocus.unfocus();
 
-  /// عند توقف الكاميرا نملأ العنوان تلقائيًا (إلا إن كتبه المستخدم بيده).
+  /// عند توقف الكاميرا نحدّث اسم المكان ومنطقته.
   void onCameraIdle() {
     _reverseDebounce?.cancel();
     _reverseDebounce = Timer(const Duration(milliseconds: 600), () async {
-      final text = addressController.text.trim();
-      if (text.isNotEmpty && !_addressAutoFilled) return;
       final point = center.value;
       if (point == null) return;
-      final label = await _places.reverse(point, language: _lang);
-      if (label != null && label.isNotEmpty) {
-        _addressAutoFilled = true;
-        addressController.text = label;
-      }
+      final place = await _places.reverse(point, language: _lang);
+      if (place == null) return;
+      placeTitle.value = place.title;
+      placeRegion.value = place.region;
     });
   }
 
-  void onAddressEdited(String _) => _addressAutoFilled = false;
+  /// داخل منطقة الخدمة؟ null عندما لا توجد نقطة بداية للمقارنة.
+  bool? get inServiceArea {
+    final point = center.value; // قراءة مراقَبة كي يعيد Obx البناء.
+    final start = startPoint;
+    if (point == null || start == null) return null;
+    return _meters(LatLng(start.latitude, start.longitude), point) <=
+        kPickupCityRadiusKm * 1000;
+  }
 
   /// نقر على الخريطة ينقل الدبوس إلى تلك النقطة.
   Future<void> onTap(LatLng position) async {
     searchFocus.unfocus();
     await mapController?.animateCamera(CameraUpdate.newLatLng(position));
   }
-
-  Future<void> zoomBy(double delta) =>
-      mapController?.animateCamera(CameraUpdate.zoomBy(delta)) ??
-      Future.value();
 
   // ----------------------------------------------------------------- search
 
@@ -165,12 +179,19 @@ class PickupPickerPageController extends GetxController {
     searchResults.clear();
     searchedOnce.value = false;
     searchController.text = result.fullLabel;
-    _addressAutoFilled = true;
-    addressController.text = result.fullLabel;
+    placeTitle.value = result.title;
+    placeRegion.value = result.subtitle;
     center.value = result.position;
     await mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(result.position, 17),
     );
+  }
+
+  /// أول خيار دائم في البحث: أسرع طريق لمعظم المسافرين.
+  Future<void> useMyLocationFromSearch() async {
+    searchFocus.unfocus();
+    clearSearch();
+    await useMyLocation();
   }
 
   void clearSearch() {
@@ -293,6 +314,17 @@ class PickupPickerPageController extends GetxController {
     return math.sqrt(dLat * dLat + dLng * dLng);
   }
 
+  /// "الاسم، المنطقة — ملاحظة الراكب للسائق".
+  String _address() {
+    final label = [
+      placeTitle.value,
+      placeRegion.value,
+    ].where((e) => e.trim().isNotEmpty).join("، ");
+    final note = addressController.text.trim();
+    if (note.isEmpty) return label;
+    return label.isEmpty ? note : "$label — $note";
+  }
+
   void confirm() {
     final point = center.value;
     if (point == null) return;
@@ -310,7 +342,7 @@ class PickupPickerPageController extends GetxController {
         source: isGps ? "gps" : "pin",
         latitude: double.parse(point.latitude.toStringAsFixed(7)),
         longitude: double.parse(point.longitude.toStringAsFixed(7)),
-        address: addressController.text,
+        address: _address(),
       ),
     );
   }

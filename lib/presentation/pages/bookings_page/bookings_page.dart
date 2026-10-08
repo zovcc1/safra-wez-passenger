@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/booking_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
@@ -97,56 +98,43 @@ class _BookingCard extends StatelessWidget {
 
   final BookingModel booking;
 
+  /// الحجز الملغى/الذي لم يحضره المسافر لا يُحتسب سعره، فيُشطب.
+  bool get _priceVoided =>
+      booking.status == "cancelled" || booking.status == "no_show";
+
   @override
   Widget build(BuildContext context) {
     final status = BookingStatusDisplay.of(booking.status);
     final journey = booking.journey;
     final isOpenTrip = journey?.isOpenTrip == true;
     final eventTime = isOpenTrip ? journey?.expiresAt : journey?.departureTime;
-    final dateText = DateConverter.dateToStringAR(eventTime);
-    final timeText = DateConverter.timeUTCToString(eventTime);
+    final dateText = eventTime == null
+        ? "booking_details_no_date".tr
+        : "${isOpenTrip ? "${"booking_details_expires".tr} " : ""}"
+              "${DateFormat("EEEE d MMMM", "ar").format(eventTime)}";
+    final seatsText = booking.seatsCount == 1
+        ? "booking_details_seats_one".tr
+        : "booking_details_seats_many".trParams({
+            "count": "${booking.seatsCount}",
+          });
 
-    return TripCardShell(
+    return CompactTripCard(
       onTap: () => Get.toNamed(
         AppRoutes.bookingDetailsRoute,
         arguments: {"bookingId": booking.bookingId},
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TripCardHeader(
-            title:
-                journey?.route?.displayName ??
-                "bookings_fallback_title".trParams({
-                  "id": "${booking.bookingId}",
-                }),
-            badge: status.label,
-            badgeColor: status.color,
-          ),
-          const SizedBox(height: 8),
-          TripInfoBox(
-            start: TripInfoItem(
-              icon: isOpenTrip
-                  ? Icons.hourglass_bottom_rounded
-                  : Icons.calendar_today_outlined,
-              title: isOpenTrip
-                  ? "trips_expires_at"
-                        .trParams({"date": dateText, "time": ""})
-                        .trim()
-                  : dateText,
-              subtitle: timeText,
-            ),
-            end: TripInfoItem(
-              icon: Icons.event_seat_outlined,
-              title: "trips_seats_available_short".trParams({
-                "seats": "${booking.seatsCount}",
-              }),
-            ),
-          ),
-          const SizedBox(height: 6),
-          TripCardFooter(price: Money.format(booking.totalAmount)),
-        ],
-      ),
+      title:
+          journey?.route?.displayName ??
+          "bookings_fallback_title".trParams({"id": "${booking.bookingId}"}),
+      badge: status.label,
+      badgeColor: status.color,
+      details: [
+        TextSpan(text: "$dateText · "),
+        CompactTripCard.strong(DateConverter.timeUTCToString(eventTime)),
+        TextSpan(text: " · $seatsText"),
+      ],
+      price: Money.format(booking.totalAmount),
+      priceVoided: _priceVoided,
     );
   }
 }

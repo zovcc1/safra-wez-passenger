@@ -4,6 +4,7 @@ import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/complaint_model.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/compact_add_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/empty_state_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
@@ -24,19 +25,9 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "complaints_title".tr, backIcon: true),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: ColorManager.colorPrimary,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        highlightElevation: 3,
-        extendedPadding: const EdgeInsets.symmetric(horizontal: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        onPressed: controller.fileNew,
-        icon: const Icon(Icons.add_rounded, size: 20),
-        label: Text(
-          "complaints_file_new".tr,
-          style: TextStyle(fontSize: FontSize.s13, fontWeight: FontWeight.w500),
-        ),
+      floatingActionButton: CompactAddButton(
+        label: "complaints_file_new".tr,
+        onTap: controller.fileNew,
       ),
       body: AppBackground(
         child: SafeArea(
@@ -102,7 +93,7 @@ class ComplaintsPage extends GetView<ComplaintsPageController> {
         AppPadding.p16,
         AppPadding.p16,
         AppPadding.p16,
-        88,
+        72,
       ),
       itemCount:
           controller.complaints.length + (controller.loadingMore.value ? 1 : 0),
@@ -167,12 +158,7 @@ class _ComplaintCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Divider(
-            height: 1,
-            color: ColorManager.colorTextFieldEnabledBorder.withValues(
-              alpha: 0.4,
-            ),
-          ),
+          const TripCardDivider(),
           const SizedBox(height: 8),
           Row(
             children: [

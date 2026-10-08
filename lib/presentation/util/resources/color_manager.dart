@@ -5,7 +5,8 @@ abstract class ColorManager {
   static bool isDark = false;
 
   // اللون الأساسي للهوية البصرية الجديدة
-  static Color get colorPrimary => const Color(0xFF0030FF);
+  static Color get colorPrimary =>
+      isDark ? const Color(0xFF3D7BFF) : const Color(0xFF0030FF);
   static Color get colorPrimary1 => colorPrimary;
   static const Color colorPrimary2 = Color(0xff4F90DA);
   static Color get colorSecondary => const Color(0xFFFFFFFF);

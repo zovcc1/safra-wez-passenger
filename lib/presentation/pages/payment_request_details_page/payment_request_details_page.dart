@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/payment_request_model.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_button.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/error_placeholder_widget.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/fade_slide_in.dart';
-import 'package:safraa_passenger_app/presentation/custom_widgets/info_pill.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/normal_app_bar.dart';
+import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
 import 'package:safraa_passenger_app/presentation/pages/payment_request_details_page/payment_request_details_page_controller.dart';
 import 'package:safraa_passenger_app/presentation/util/date_converter.dart';
 import 'package:safraa_passenger_app/presentation/util/resources/color_manager.dart';
@@ -21,38 +22,40 @@ class PaymentRequestDetailsPage
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorManager.colorBackground,
+      backgroundColor: Colors.transparent,
       appBar: NormalAppBar(title: "payment_request_title".tr, backIcon: true),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.retry,
-          child: Obx(() {
-            final state = controller.loadingState.value;
-            if (state == LoadingState.loading || state == LoadingState.idle) {
-              return const AppPageLoader();
-            }
-            if (state == LoadingState.hasError) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 80),
-                    child: ErrorPlaceholderWidget(
-                      title: "payment_request_error_title".tr,
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.retry,
+            child: Obx(() {
+              final state = controller.loadingState.value;
+              if (state == LoadingState.loading || state == LoadingState.idle) {
+                return const AppPageLoader();
+              }
+              if (state == LoadingState.hasError) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 80),
+                      child: ErrorPlaceholderWidget(
+                        title: "payment_request_error_title".tr,
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppPadding.p16),
-                    child: AppButton(
-                      text: "common_retry".tr,
-                      onPressed: controller.retry,
+                    Padding(
+                      padding: const EdgeInsets.all(AppPadding.p16),
+                      child: AppButton(
+                        text: "common_retry".tr,
+                        onPressed: controller.retry,
+                      ),
                     ),
-                  ),
-                ],
-              );
-            }
-            return _content(controller.request.value!);
-          }),
+                  ],
+                );
+              }
+              return _content(controller.request.value!);
+            }),
+          ),
         ),
       ),
     );
@@ -78,19 +81,19 @@ class PaymentRequestDetailsPage
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.payments_outlined,
-                      size: 20,
+                      size: 18,
                       color: color,
                     ),
                   ),
-                  const SizedBox(width: AppPadding.p12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,8 +101,8 @@ class PaymentRequestDetailsPage
                         Text(
                           _statusLabel(r),
                           style: TextStyle(
-                            fontSize: FontSize.s15,
-                            fontWeight: FontWeight.bold,
+                            fontSize: FontSize.s14,
+                            fontWeight: FontWeight.w500,
                             color: color,
                           ),
                         ),
@@ -108,7 +111,7 @@ class PaymentRequestDetailsPage
                           Text(
                             _terminalText(r),
                             style: TextStyle(
-                              fontSize: FontSize.s12,
+                              fontSize: FontSize.s11,
                               color: ColorManager.colorGrey6,
                             ),
                           ),
@@ -119,7 +122,7 @@ class PaymentRequestDetailsPage
                 ],
               ),
               if (r.isPending) ...[
-                const SizedBox(height: AppPadding.p10),
+                const SizedBox(height: AppPadding.p8),
                 Obx(() {
                   final s = controller.secondsLeft.value;
                   final mm = (s ~/ 60).toString().padLeft(2, "0");
@@ -127,29 +130,26 @@ class PaymentRequestDetailsPage
                   final urgent = s < 60;
                   return Align(
                     alignment: AlignmentDirectional.centerStart,
-                    child: InfoPill(
+                    child: TripCardChip(
                       icon: Icons.timer_outlined,
                       color: urgent
                           ? ColorManager.colorError500
                           : ColorManager.colorOrange,
-                      text: "payment_request_time_left".trParams({
+                      label: "payment_request_time_left".trParams({
                         "time": "$mm:$ss",
                       }),
                     ),
                   );
                 }),
               ],
-              const SizedBox(height: AppPadding.p10),
-              Divider(
-                height: 1,
-                color: ColorManager.colorTextFieldEnabledBorder,
-              ),
-              const SizedBox(height: AppPadding.p10),
+              const SizedBox(height: AppPadding.p8),
+              const TripCardDivider(),
+              const SizedBox(height: AppPadding.p8),
               Center(
                 child: Text(
                   "payment_request_amount".tr,
                   style: TextStyle(
-                    fontSize: FontSize.s12,
+                    fontSize: FontSize.s11,
                     color: ColorManager.colorGrey6,
                   ),
                 ),
@@ -160,8 +160,8 @@ class PaymentRequestDetailsPage
                   // المبلغ نص من الخادم ولا يُحوَّل إلى float.
                   Money.format(r.amount),
                   style: TextStyle(
-                    fontSize: FontSize.s24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: FontSize.s20,
+                    fontWeight: FontWeight.w500,
                     color: ColorManager.colorPrimary,
                   ),
                 ),
@@ -169,68 +169,76 @@ class PaymentRequestDetailsPage
             ],
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         // ---- الرحلة
         _card(
           delayMs: 70,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (route != null)
+              if (route != null) ...[
                 Row(
                   children: [
-                    Icon(
-                      Icons.route_outlined,
-                      size: AppSize.s20,
-                      color: ColorManager.colorPrimary,
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: ColorManager.colorPrimary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.alt_route_rounded,
+                        size: 18,
+                        color: ColorManager.colorPrimary,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         route.displayName,
                         style: TextStyle(
-                          fontSize: FontSize.s15,
-                          fontWeight: FontWeight.bold,
+                          fontSize: FontSize.s14,
+                          fontWeight: FontWeight.w500,
                           color: ColorManager.colorFontPrimary,
                         ),
                       ),
                     ),
                   ],
                 ),
-              if (departure != null) ...[
                 const SizedBox(height: AppPadding.p8),
-                InfoPill(
-                  icon: Icons.schedule_outlined,
-                  text: "trips_departure_at".trParams({
-                    "date": DateConverter.dateToStringAR(departure),
-                    "time": DateConverter.timeUTCToString(departure),
-                  }),
-                ),
               ],
-              const SizedBox(height: AppPadding.p10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _InfoTile(
-                      icon: Icons.event_seat_outlined,
-                      label: "payment_request_seats".tr,
-                      value: seatsText,
+              TripInfoStrip(
+                cells: [
+                  if (departure != null) ...[
+                    TripStripCell(
+                      flex: 5,
+                      icon: Icons.calendar_today_rounded,
+                      text: DateConverter.dateToStringAR(departure),
                     ),
-                  ),
-                  const SizedBox(width: AppPadding.p8),
-                  Expanded(
-                    child: _InfoTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      label: "payment_request_payment_method".tr,
-                      value: "create_booking_payment_wallet_short".tr,
+                    TripStripCell(
+                      flex: 3,
+                      icon: Icons.access_time_rounded,
+                      text: DateConverter.timeUTCToString(departure),
                     ),
+                  ],
+                  TripStripCell(
+                    flex: 4,
+                    icon: Icons.event_seat_outlined,
+                    text: seatsText,
                   ),
                 ],
+              ),
+              const SizedBox(height: AppPadding.p8),
+              TripCardChip(
+                icon: Icons.account_balance_wallet_outlined,
+                color: ColorManager.colorPrimary,
+                label:
+                    "${"payment_request_payment_method".tr}: ${"create_booking_payment_wallet_short".tr}",
               ),
             ],
           ),
         ),
-        const SizedBox(height: AppPadding.p12),
+        const SizedBox(height: AppPadding.p8),
         FadeSlideIn(
           delay: const Duration(milliseconds: 140),
           child: Column(
@@ -304,7 +312,7 @@ class PaymentRequestDetailsPage
     child: Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p12,
+        horizontal: 14,
         vertical: AppPadding.p10,
       ),
       decoration: BoxDecoration(
@@ -313,7 +321,7 @@ class PaymentRequestDetailsPage
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -354,64 +362,5 @@ class PaymentRequestDetailsPage
       default:
         return "";
     }
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p10,
-        vertical: AppPadding.p8,
-      ),
-      decoration: BoxDecoration(
-        color: ColorManager.colorBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: ColorManager.colorPrimary),
-          const SizedBox(width: AppPadding.p8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s10,
-                    color: ColorManager.colorGrey6,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: FontSize.s12,
-                    fontWeight: FontWeight.bold,
-                    color: ColorManager.colorFontPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

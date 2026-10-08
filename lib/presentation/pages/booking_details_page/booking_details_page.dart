@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/app_background.dart';
 import 'package:safraa_passenger_app/presentation/custom_widgets/trip_card_widgets.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:get/get.dart';
 import 'package:safraa_passenger_app/data/enums/loading_state_enum.dart';
 import 'package:safraa_passenger_app/data/models/booking_model.dart';
@@ -99,12 +100,6 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
         ],
         const SizedBox(height: AppPadding.p8),
         staggered(_BookingInfoCard(booking: booking)),
-        if (_hasTimeline(booking)) ...[
-          const SizedBox(height: AppPadding.p8),
-          staggered(_TimelineCard(booking: booking)),
-        ],
-        const SizedBox(height: AppPadding.p8),
-        staggered(_PriceSummaryCard(booking: booking)),
         if (booking.canRate || booking.rating != null) ...[
           const SizedBox(height: AppPadding.p8),
           staggered(
@@ -113,32 +108,24 @@ class BookingDetailsPage extends GetView<BookingDetailsPageController> {
         ],
         const SizedBox(height: AppPadding.p8),
         staggered(
-          AppButton(
-            text: "booking_details_file_complaint".tr,
-            icon: Icon(
-              Icons.report_gmailerrorred_outlined,
-              size: 18,
-              color: ColorManager.colorError300,
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton(
+              onPressed: controller.fileComplaint,
+              child: Text(
+                "booking_details_file_complaint".tr,
+                style: TextStyle(
+                  fontSize: FontSize.s13,
+                  color: ColorManager.colorGrey6,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
             ),
-            backgroundColor: ColorManager.colorError300.withValues(alpha: 0.08),
-            fontColor: ColorManager.colorError300,
-            border: Border.all(
-              color: ColorManager.colorError300.withValues(alpha: 0.4),
-            ),
-            radius: 12,
-            minHeight: 42,
-            onPressed: controller.fileComplaint,
           ),
         ),
       ],
     );
   }
-
-  bool _hasTimeline(BookingModel booking) =>
-      booking.createdAt != null ||
-      booking.confirmedAt != null ||
-      booking.boardedAt != null ||
-      booking.noShowAt != null;
 }
 
 String _paymentMethodLabel(String method) => switch (method) {
@@ -147,12 +134,11 @@ String _paymentMethodLabel(String method) => switch (method) {
   _ => method,
 };
 
+/// تاريخ بلا سنة (مثل "5 أكتوبر"): السنة غير مفيدة في تفاصيل حجز قريب.
 String _dateTime(DateTime? date) => date == null
     ? "booking_details_no_date".tr
-    : "trips_departure_at".trParams({
-        "date": DateConverter.dateToStringAR(date),
-        "time": DateConverter.timeUTCToString(date),
-      });
+    : "${DateFormat("d MMMM", "ar").format(date)} · "
+          "${DateConverter.timeUTCToString(date)}";
 
 /// إطار بصري موحّد لكل بطاقات هذه الشاشة: أبيض + ظل خفيف + زوايا دائرية،
 /// بنفس مواصفات بطاقات trips_page و bookings_page كي تبقى الواجهة متسقة.
@@ -193,17 +179,67 @@ class _StatusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = BookingStatusDisplay.of(booking.status);
+    // حجز ملغى لرحلة ما زالت مجدولة: سطر واحد يشرح "التناقض" بدل شارتين متعارضتين.
+    final cancelledOnActiveTrip =
+        booking.status == "cancelled" && booking.journey?.isOpenTrip == false;
+    final description = cancelledOnActiveTrip
+        ? "booking_status_cancelled_trip_active_desc".tr
+        : status.description;
     return _CardFrame(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TripCardHeader(
-            icon: Icons.event_seat_outlined,
-            title:
-                "${"booking_details_booking_number".tr} #${booking.bookingId}",
-            badge: status.label,
-            badgeColor: status.color,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "booking_details_booking_label".tr,
+                style: TextStyle(
+                  fontSize: FontSize.s14,
+                  color: ColorManager.colorGrey6,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "#${booking.bookingId}",
+                textDirection: TextDirection.ltr,
+                style: TextStyle(
+                  fontSize: FontSize.s28,
+                  fontWeight: FontWeight.w600,
+                  color: ColorManager.colorFontPrimary,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: status.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  status.label,
+                  style: TextStyle(
+                    fontSize: FontSize.s11,
+                    fontWeight: FontWeight.w500,
+                    color: status.color,
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: FontSize.s12,
+                color: ColorManager.colorGrey6,
+              ),
+            ),
+          ],
           if (booking.transferredByHandoff) ...[
             const SizedBox(height: 8),
             TripCardChip(
@@ -228,44 +264,16 @@ class _RouteCard extends StatelessWidget {
     final journey = booking.journey;
     final route = journey?.route;
     final isOpenTrip = journey?.isOpenTrip == true;
+    final date = isOpenTrip ? journey?.expiresAt : journey?.departureTime;
+    final dateText = date == null
+        ? "booking_details_no_date".tr
+        : "${isOpenTrip ? "${"booking_details_expires".tr} " : ""}"
+              "${DateFormat("EEEE d MMMM", "ar").format(date)}";
 
     return _CardFrame(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _SectionTitle(
-                icon: Icons.route_outlined,
-                title: "booking_details_section_trip".tr,
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color:
-                      (isOpenTrip
-                              ? ColorManager.colorOrange
-                              : ColorManager.colorPrimary)
-                          .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  isOpenTrip
-                      ? "booking_details_trip_type_open".tr
-                      : "booking_details_trip_type_scheduled".tr,
-                  style: TextStyle(
-                    fontSize: FontSize.s10_5,
-                    fontWeight: FontWeight.w500,
-                    color: isOpenTrip
-                        ? ColorManager.colorOrange
-                        : ColorManager.colorPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppPadding.p8),
           if (route?.origin != null && route?.destination != null)
             _RoutePoints(
               origin: route!.origin!.displayName,
@@ -275,44 +283,34 @@ class _RouteCard extends StatelessWidget {
             Text(
               route?.displayName ?? "",
               style: TextStyle(
-                fontSize: FontSize.s14,
-                fontWeight: FontWeight.w500,
+                fontSize: FontSize.s15,
+                fontWeight: FontWeight.w600,
                 color: ColorManager.colorFontPrimary,
               ),
             ),
           const SizedBox(height: AppPadding.p8),
-          Container(height: 1, color: ColorManager.colorDivider),
+          const TripCardDivider(),
           const SizedBox(height: AppPadding.p8),
           Row(
             children: [
-              Icon(
-                isOpenTrip
-                    ? Icons.hourglass_bottom_outlined
-                    : Icons.schedule_outlined,
-                size: 16,
-                color: ColorManager.colorGrey6,
-              ),
-              const SizedBox(width: 6),
               Text(
-                isOpenTrip
-                    ? "booking_details_expires".tr
-                    : "booking_details_departure_time".tr,
+                dateText,
                 style: TextStyle(
-                  fontSize: FontSize.s12,
+                  fontSize: FontSize.s13,
                   color: ColorManager.colorGrey6,
                 ),
               ),
               const Spacer(),
-              Text(
-                isOpenTrip
-                    ? _dateTime(journey?.expiresAt)
-                    : _dateTime(journey?.departureTime),
-                style: TextStyle(
-                  fontSize: FontSize.s13,
-                  fontWeight: FontWeight.w500,
-                  color: ColorManager.colorFontPrimary,
+              if (date != null)
+                Text(
+                  DateConverter.timeUTCToString(date),
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(
+                    fontSize: FontSize.s20,
+                    fontWeight: FontWeight.w600,
+                    color: ColorManager.colorFontPrimary,
+                  ),
                 ),
-              ),
             ],
           ),
         ],
@@ -321,6 +319,7 @@ class _RouteCard extends StatelessWidget {
   }
 }
 
+/// نقطتان (من/إلى): كل نقطة بنفس سطر اسم المدينة، والخط بينهما فقط.
 class _RoutePoints extends StatelessWidget {
   const _RoutePoints({required this.origin, required this.destination});
 
@@ -329,85 +328,112 @@ class _RoutePoints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        Column(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: ColorManager.colorPrimary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            Container(width: 1.5, height: 22, color: ColorManager.colorDivider),
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: ColorManager.colorOrange,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
+        _RoutePointRow(
+          label: "trips_route_from_label".tr,
+          value: origin,
+          color: ColorManager.colorPrimary,
+          hasLine: true,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _RoutePointLabel(
-                label: "trips_route_from_label".tr,
-                value: origin,
-              ),
-              const SizedBox(height: 12),
-              _RoutePointLabel(
-                label: "trips_route_to_label".tr,
-                value: destination,
-              ),
-            ],
-          ),
+        _RoutePointRow(
+          label: "trips_route_to_label".tr,
+          value: destination,
+          color: ColorManager.colorOrange,
+          hasLine: false,
         ),
       ],
     );
   }
 }
 
-class _RoutePointLabel extends StatelessWidget {
-  const _RoutePointLabel({required this.label, required this.value});
+class _RoutePointRow extends StatelessWidget {
+  const _RoutePointRow({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.hasLine,
+  });
 
   final String label;
   final String value;
+  final Color color;
+  final bool hasLine;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: FontSize.s11,
-            color: ColorManager.colorGrey6,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: FontSize.s14,
-              fontWeight: FontWeight.w500,
-              color: ColorManager.colorFontPrimary,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 10,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 22,
+                  child: Center(
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+                if (hasLine)
+                  Expanded(
+                    child: Container(
+                      width: 1.5,
+                      color: ColorManager.colorDivider,
+                    ),
+                  ),
+              ],
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: hasLine ? 14 : 0),
+              child: SizedBox(
+                height: 22,
+                child: Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: FontSize.s12,
+                        color: ColorManager.colorGrey6,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        value,
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: FontSize.s16,
+                          fontWeight: FontWeight.w600,
+                          color: ColorManager.colorFontPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+/// بيانات الحجز كصفوف (عنوان/قيمة) بفواصل رفيعة، والإجمالي في آخر صف.
 class _BookingInfoCard extends StatelessWidget {
   const _BookingInfoCard({required this.booking});
 
@@ -415,211 +441,93 @@ class _BookingInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _CardFrame(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionTitle(
-            icon: Icons.confirmation_number_outlined,
-            title: "booking_details_section_booking".tr,
-          ),
-          const SizedBox(height: AppPadding.p8),
-          _InfoGrid(
-            tiles: [
-              _InfoTile(
-                label: "booking_details_booking_number".tr,
-                value: "#${booking.bookingId}",
-              ),
-              _InfoTile(
-                label: "trips_seats_label".tr,
-                value: "${booking.seatsCount}",
-              ),
-              if (booking.seats.isNotEmpty)
-                _InfoTile(
-                  label: "booking_details_seat_numbers".tr,
-                  value: booking.seats
-                      .map((s) => s.seatNumber)
-                      .join("common_list_separator".tr),
-                ),
-              _InfoTile(
-                label: "create_booking_payment_method_title".tr,
-                value: _paymentMethodLabel(booking.paymentMethod),
-              ),
-            ],
-          ),
-        ],
+    final seatNumbers = booking.seats
+        .map((s) => s.seatNumber)
+        .join("common_list_separator".tr);
+    final rows = <_InfoRow>[
+      _InfoRow(
+        "booking_details_seats".tr,
+        booking.seatsCount == 1
+            ? "booking_details_seats_one".tr
+            : "booking_details_seats_many".trParams({
+                "count": "${booking.seatsCount}",
+              }),
       ),
-    );
-  }
-}
-
-class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.booking});
-
-  final BookingModel booking;
-
-  @override
-  Widget build(BuildContext context) {
-    final steps = <_TimelineStep>[
+      if (booking.seats.isNotEmpty)
+        _InfoRow("booking_details_seat_numbers".tr, seatNumbers),
+      _InfoRow(
+        "booking_details_payment".tr,
+        _paymentMethodLabel(booking.paymentMethod),
+      ),
       if (booking.createdAt != null)
-        _TimelineStep(
-          icon: Icons.add_circle_outline,
-          label: "booking_details_created_at".tr,
-          date: booking.createdAt,
-          color: ColorManager.colorGrey6,
+        _InfoRow(
+          "booking_details_booking_date".tr,
+          _dateTime(booking.createdAt),
         ),
-      if (booking.confirmedAt != null)
-        _TimelineStep(
-          icon: Icons.check_circle_outline,
-          label: "booking_details_confirmed_at".tr,
-          date: booking.confirmedAt,
-          color: ColorManager.colorGreen3,
-        ),
+      // if (booking.confirmedAt != null)
+      //   _InfoRow(
+      //     "booking_details_confirmed_at".tr,
+      //     _dateTime(booking.confirmedAt),
+      //   ),
       if (booking.boardedAt != null)
-        _TimelineStep(
-          icon: Icons.directions_bus_outlined,
-          label: "booking_details_boarded_at".tr,
-          date: booking.boardedAt,
-          color: ColorManager.colorPrimary,
-        ),
+        _InfoRow("booking_details_boarded_at".tr, _dateTime(booking.boardedAt)),
       if (booking.noShowAt != null)
-        _TimelineStep(
-          icon: Icons.cancel_outlined,
-          label: "booking_details_no_show_at".tr,
-          date: booking.noShowAt,
-          color: ColorManager.colorError300,
-        ),
+        _InfoRow("booking_details_no_show_at".tr, _dateTime(booking.noShowAt)),
+      _InfoRow(
+        "booking_details_total_amount".tr,
+        Money.format(booking.totalAmount),
+        emphasized: true,
+      ),
     ];
-
     return _CardFrame(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
-            icon: Icons.history_outlined,
-            title: "booking_details_section_timeline".tr,
-          ),
-          const SizedBox(height: AppPadding.p8),
-          for (var i = 0; i < steps.length; i++)
-            _TimelineRow(step: steps[i], isLast: i == steps.length - 1),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const TripCardDivider(),
+            _InfoRowView(row: rows[i]),
+          ],
         ],
       ),
     );
   }
 }
 
-class _TimelineStep {
-  const _TimelineStep({
-    required this.icon,
-    required this.label,
-    required this.date,
-    required this.color,
-  });
+class _InfoRow {
+  const _InfoRow(this.label, this.value, {this.emphasized = false});
 
-  final IconData icon;
   final String label;
-  final DateTime? date;
-  final Color color;
+  final String value;
+  final bool emphasized;
 }
 
-class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.step, required this.isLast});
+class _InfoRowView extends StatelessWidget {
+  const _InfoRowView({required this.row});
 
-  final _TimelineStep step;
-  final bool isLast;
+  final _InfoRow row;
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: step.color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(step.icon, size: 14, color: step.color),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 1.5,
-                    color: ColorManager.colorDivider,
-                  ),
-                ),
-            ],
+          Text(
+            row.label,
+            style: TextStyle(
+              fontSize: FontSize.s13,
+              color: ColorManager.colorGrey6,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: isLast ? 0 : AppPadding.p16,
-                top: 2,
+            child: Text(
+              row.value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: row.emphasized ? FontSize.s17 : FontSize.s15,
+                fontWeight: row.emphasized ? FontWeight.w500 : FontWeight.w400,
+                color: ColorManager.colorFontPrimary,
               ),
-              child: Row(
-                children: [
-                  Text(
-                    step.label,
-                    style: TextStyle(
-                      fontSize: FontSize.s13,
-                      fontWeight: FontWeight.w500,
-                      color: ColorManager.colorFontPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _dateTime(step.date),
-                    style: TextStyle(
-                      fontSize: FontSize.s12,
-                      color: ColorManager.colorGrey6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceSummaryCard extends StatelessWidget {
-  const _PriceSummaryCard({required this.booking});
-
-  final BookingModel booking;
-
-  @override
-  Widget build(BuildContext context) {
-    return _CardFrame(
-      child: Row(
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            color: ColorManager.colorPrimary,
-            size: 22,
-          ),
-          const SizedBox(width: AppPadding.p8),
-          Text(
-            "booking_details_total_amount".tr,
-            style: TextStyle(
-              fontSize: FontSize.s14,
-              fontWeight: FontWeight.w500,
-              color: ColorManager.colorFontPrimary,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            Money.format(booking.totalAmount),
-            style: TextStyle(
-              fontSize: FontSize.s16,
-              fontWeight: FontWeight.w500,
-              color: ColorManager.colorPrimary,
             ),
           ),
         ],
@@ -643,10 +551,7 @@ class _RatingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
-            icon: Icons.star_outline_rounded,
-            title: "booking_details_section_rating".tr,
-          ),
+          _SectionTitle(title: "booking_details_section_rating".tr),
           const SizedBox(height: AppPadding.p8),
           if (rating != null) ...[
             _ReadOnlyScore(
@@ -707,108 +612,18 @@ class _ReadOnlyScore extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.icon, required this.title});
+  const _SectionTitle({required this.title});
 
-  final IconData icon;
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: ColorManager.colorPrimary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: ColorManager.colorPrimary),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: FontSize.s15,
-            fontWeight: FontWeight.w500,
-            color: ColorManager.colorFontPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InfoTile {
-  const _InfoTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-}
-
-class _InfoGrid extends StatelessWidget {
-  const _InfoGrid({required this.tiles});
-
-  final List<_InfoTile> tiles;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: tiles.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppPadding.p8,
-        crossAxisSpacing: AppPadding.p8,
-        mainAxisExtent: 48,
-      ),
-      itemBuilder: (context, index) => _InfoTileView(tile: tiles[index]),
-    );
-  }
-}
-
-class _InfoTileView extends StatelessWidget {
-  const _InfoTileView({required this.tile});
-
-  final _InfoTile tile;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPadding.p8,
-        vertical: AppPadding.p4,
-      ),
-      decoration: BoxDecoration(
-        color: ColorManager.colorBackground.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            tile.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: FontSize.s10,
-              color: ColorManager.colorGrey6,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            tile.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: FontSize.s11,
-              fontWeight: FontWeight.w500,
-              color: ColorManager.colorFontPrimary,
-            ),
-          ),
-        ],
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: FontSize.s14,
+        fontWeight: FontWeight.w600,
+        color: ColorManager.colorFontPrimary,
       ),
     );
   }
@@ -839,10 +654,7 @@ class _PickupCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
-            icon: Icons.pin_drop_outlined,
-            title: "booking_details_section_pickup".tr,
-          ),
+          _SectionTitle(title: "booking_details_section_pickup".tr),
           const SizedBox(height: AppPadding.p8),
           Text(
             pickup.address?.isNotEmpty == true
